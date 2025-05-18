@@ -1,0 +1,12 @@
+{
+  "name": "nlcs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"yarn --cwd backend dev\" \"yarn --cwd frontend dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
