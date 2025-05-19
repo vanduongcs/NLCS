@@ -9,4 +9,8 @@ router.get('/:id', certificateController.getCertificate)
 
 router.get('/', certificateController.getCertificates)
 
+router.put('/:id', certificateController.updateCertificate)
+
+router.delete('/:id', certificateController.deleteCertificate)
+
 export default router

@@ -28,8 +28,37 @@ const getCertificates = async (req, res) => {
   }
 }
 
+const updateCertificate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Certificate.findByIdAndUpdate(id, req.body, { new: true });
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+const deleteCertificate = async (req, res) => {
+  try {
+    const { id } = req.params
+    const item = await Certificate.findByIdAndDelete(id)
+
+    if (!item) {
+      return res.status(404).json({message: "Certificate not found"})
+    }
+
+    res.status(200).json({message: "Certificate deleted successfully"})
+
+  } 
+  catch (error) {
+    return res.status(500).json({message: error.message})    
+  }
+}
+
 export default {
   createCertificate,
   getCertificate,
-  getCertificates
+  getCertificates,
+  updateCertificate,
+  deleteCertificate
 }
