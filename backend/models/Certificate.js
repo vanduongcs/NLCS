@@ -5,9 +5,13 @@ const CertificateSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please enter name']
   },
+  Loai: {
+    type: String,
+    required: [true, 'Lack of Loai']
+  },
   MaSo: {
     type: String,
-    require: [true, 'Please enter user code']
+    required: [true, 'Please enter user code']
   },
   Diem_KN1: {
     type: Number,
@@ -29,7 +33,7 @@ const CertificateSchema = new mongoose.Schema({
     required: false,
     default: -1,
   },
-  DiemTK: {
+  Diem_TK: {
     type: Number,
     required: [true, 'Error, lack of summary points'],
     min: 0
