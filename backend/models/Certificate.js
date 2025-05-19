@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const ChungChiSchema = new mongoose.Schema({
+const CertificateSchema = new mongoose.Schema({
   Ten: {
     type: String,
     required: [true, 'Please enter name']
@@ -47,6 +47,6 @@ const ChungChiSchema = new mongoose.Schema({
   }
 });
 
-const ChungChi = mongoose.model('ChungChi', ChungChiSchema)
+const Certificate = mongoose.model('Certificate', CertificateSchema)
 
-export default ChungChi
+export default Certificate

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const TaiKhoanSchema = new mongoose.Schema({
+const AccountSchema = new mongoose.Schema({
   Loai: {
     type: String,
     required: [true, 'Lack of \'Loai\''],
@@ -22,6 +22,6 @@ const TaiKhoanSchema = new mongoose.Schema({
   }
 })
 
-const TaiKhoan = mongoose.model('TaiKhoan', TaiKhoanSchema)
+const Account = mongoose.model('Account', AccountSchema)
 
-export default TaiKhoan
+export default Account

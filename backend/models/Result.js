@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const KetQuaSchema = new mongoose.Schema({
+const ResultSchema = new mongoose.Schema({
   Ten: {
     type: String,
     required: [true, 'Please enter name']
@@ -43,6 +43,6 @@ const KetQuaSchema = new mongoose.Schema({
   },
 });
 
-const KetQua = mongoose.model('DotThi ', KetQuaSchema)
+const Result = mongoose.model('Result ', ResultSchema)
 
-export default KetQua
+export default Result

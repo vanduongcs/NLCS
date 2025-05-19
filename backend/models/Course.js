@@ -1,19 +1,19 @@
 import mongoose from 'mongoose'
 
-const DotThiSchema = new mongoose.Schema({
+const CourseSchema = new mongoose.Schema({
   Loai: {
     type: String,
     required: [true, 'Lack of \'Loai\'']
   },
-  NgayThi: {
+  NgayKG: {
     type: Date,
     required: [true, 'Lack of \'NgayThi\'']
   },
-  CaThi: {
+  Buoi: {
     type: String,
     required: true
   },
-  TGThi: {
+  TGHoc: {
     typde: Date,
     required: [true, 'Lack of TGThi']
   },
@@ -27,6 +27,6 @@ const DotThiSchema = new mongoose.Schema({
   }
 })
 
-const DotThi = mongoose.model('DotThi', DotThiSchema)
+const Course = mongoose.model('Course', CourseSchema)
 
-export default DotThi
+export default Course

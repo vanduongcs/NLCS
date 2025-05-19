@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const KhoaOnSchema = new mongoose.Schema({
+const ExamSessionSchema = new mongoose.Schema({
   Loai: {
     type: String,
     required: [true, 'Lack of \'Loai\'']
@@ -27,6 +27,6 @@ const KhoaOnSchema = new mongoose.Schema({
   }
 })
 
-const KhoaOn = mongoose.model('KhoaOn', KhoaOnSchema)
+const ExamSession = mongoose.model('ExamSession', ExamSessionSchema)
 
-export default KhoaOn
+export default ExamSession
