@@ -9,6 +9,8 @@ import DKThi from './pages/DKThi.jsx'
 import KetQua from './pages/KetQua.jsx'
 import KTChungChi from './pages/KTChungChi.jsx'
 import TTChung from './pages/ThongTinChung.jsx'
+import DangNhap from './pages/DangNhap.jsx'
+
 
 // import MUITable from '../data/Cert/MUITable.jsx'
 
@@ -30,7 +32,9 @@ function App() {
     <Router>
       <Box>
         <Routes>
-          <Route path='/' element={<TrangChu />} />
+
+          <Route path='/' element={<DangNhap />} />
+          <Route path='/trang-chu' element={<TrangChu />} />
           <Route path='/dot-thi' element={<DotThi />} />
           <Route path='/lich-khai-giang' element={<LichKhaiGiang />} />
           <Route path='/dang-ky-khoa-on' element={<DKOn />} />

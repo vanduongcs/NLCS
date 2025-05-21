@@ -1,27 +1,47 @@
 import React from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import palette from '../../theme/palette.js'
 import { useNavigate } from 'react-router-dom'
 import ExtendMenu from './ExtendMenu.jsx'
-
-const colors = palette('dark')
+import Typography from '@mui/material/Typography'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import IconButton from '@mui/material/IconButton'
+import { useEffect } from 'react'
+import ModeSelector from './ModeSelector.jsx'
 
 const sxStyle = {
   fontWeight: 'bold',
-  color: colors.text.primary,
-  textTransform: 'none'
+  color: '#f5f6fa',
+  textTransform: 'none',
+  m: '0 0.25rem',
+}
+
+const setMarginZero = {
+  m: 0
 }
 
 function NavBar() {
   const navigate = useNavigate()
+  const navButtonFontSize = 'h7'
+
+  useEffect(() => {
+      const loginState = localStorage.getItem('loginState')
+      if (loginState == 'false') {
+        navigate('/')
+      }
+    }, [navigate])
+  
+  const handleLogOut = () => {
+    localStorage.setItem('loginState', 'false')
+    navigate('/')
+  }
 
   return (
     <Box
     sx={{
       height: '60px',
       padding: 1,
-      bgcolor: colors.background.navBar,
+      bgcolor: '#0a60a6',
       justifyContent: 'space-between',
       display: 'flex'
     }}>
@@ -53,25 +73,60 @@ function NavBar() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 2
             }}>
             <ExtendMenu />
-            <Button 
-              onClick={() => {navigate('/')}} sx={sxStyle}>Trang Chủ
-            </Button>
+            <Box
+              sx={{
+                [`@media (max-width:810px)`]: {
+                  display: 'none'
+                }
+              }}>
+              <Button 
+                onClick={() => {navigate('/')}} sx={sxStyle}>
+                  <Typography 
+                    variant={navButtonFontSize} 
+                    sx={setMarginZero}
+                    gutterBottom
+                  >
+                    Trang Chủ
+                  </Typography>
+              </Button>
 
-            <Button
-              onClick={() => {navigate('/xac-thuc-chung-chi')}} sx={sxStyle}>Xác Thực
-
-            </Button>
-            <Button
-              onClick={() => {navigate('/thong-tin-chung')}} sx={sxStyle}>Thông Tin Chung
-            </Button>
+              <Button
+                onClick={() => {navigate('/xac-thuc-chung-chi')}} sx={sxStyle}>
+                  <Typography 
+                    variant={navButtonFontSize} 
+                    sx={setMarginZero}
+                    gutterBottom
+                  >
+                    Xác Thực
+                  </Typography>
+              </Button>
+              <Button
+                onClick={() => {navigate('/thong-tin-chung')}} sx={sxStyle}>
+                  <Typography 
+                    variant={navButtonFontSize} 
+                    sx={setMarginZero}
+                    gutterBottom
+                  >
+                    Thông Tin Chung
+                  </Typography>
+              </Button>
+            </Box>
           </Box>
         </Box>
 
-        <Box>
-b
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            gap: 2
+          }}
+        >
+          <ModeSelector />
+          <IconButton>
+            <ExitToAppIcon onClick={handleLogOut}/>
+          </IconButton>
         </Box>
     </Box>
   )
