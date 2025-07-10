@@ -8,7 +8,11 @@ import Exam from '../models/Exam.js'
 
 const register = async (req, res) => {
   try {
-    const { Loai, TenHienThi, TenTaiKhoan, MatKhau
+    const {
+      Loai,
+      TenHienThi,
+      TenTaiKhoan,
+      MatKhau
       // , KhoaHocDaThamGia, KhoaThi, ChungChiDaNhan 
     } = req.body
 
@@ -40,10 +44,14 @@ const login = async (req, res) => {
       return res.status(409).json({ message: 'Sai mật khẩu' })
     }
 
-    const token = jwt.sign({ id: dbAccount._id }, process.env.JWT_SECRET, { expiresIn: '1h' })
+    const token = jwt.sign(
+      { id: dbAccount._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
 
     res.status(200).json({
-      token,
+      token
       // dbAccount: { id: dbAccount._id, TenHienThi: dbAccount.TenHienThi, TenTaiKhoan: dbAccount.TenTaiKhoan, Loai: dbAccount.Loai }
     })
   } catch (error) {
@@ -54,7 +62,6 @@ const login = async (req, res) => {
 const getAccounts = async (req, res) => {
   try {
     const accounts = await Account.find()
-
     res.status(200).json(accounts)
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
@@ -63,14 +70,11 @@ const getAccounts = async (req, res) => {
 
 const getAccount = async (req, res) => {
   try {
-    // account lấy được từ VerifyToken decode token ra account.id
     const account = await Account.findById(req.account.id)
-
     if (!account) {
       return res.status(404).json({ message: 'Không tìm thấy tài khoản' })
     }
-
-    res.status(200).json(account);
+    res.status(200).json(account)
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
@@ -147,18 +151,30 @@ const updateAccount = async (req, res) => {
     ]
 
     const addedKTTG = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
-const removedKTTG = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
+    const removedKTTG = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
 
     const updateExamPromises = [
       ...addedKTTG.map(id =>
-        Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } }, { new: true, runValidators: true })
+        Exam.findByIdAndUpdate(
+          id,
+          { $inc: { SiSoHienTai: 1 } },
+          { new: true, runValidators: true }
+        )
       ),
       ...removedKTTG.map(id =>
-        Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }, { new: true, runValidators: true })
+        Exam.findByIdAndUpdate(
+          id,
+          { $inc: { SiSoHienTai: -1 } },
+          { new: true, runValidators: true }
+        )
       )
     ]
 
-    await Promise.all([...updateCertPromises, ...updateCoursePromises, ...updateExamPromises])
+    await Promise.all([
+      ...updateCertPromises,
+      ...updateCoursePromises,
+      ...updateExamPromises
+    ])
 
     res.status(200).json(updatedAccount)
   } catch (error) {
@@ -171,7 +187,6 @@ const deleteAccount = async (req, res) => {
     const { id } = req.params
 
     const account = await Account.findById(id)
-
     if (!account) {
       return res.status(404).json({ message: 'Không tìm thấy tài khoản' })
     }
@@ -202,7 +217,12 @@ const deleteAccount = async (req, res) => {
       )
     )
 
-    await Promise.all([...updateCertPromises, ...updateCoursePromises, ...updateExamPromises])
+    await Promise.all([
+      ...updateCertPromises,
+      ...updateCoursePromises,
+      ...updateExamPromises
+    ])
+
     await Account.findByIdAndDelete(id)
 
     res.status(200).json({ message: 'Xóa tài khoản thành công' })

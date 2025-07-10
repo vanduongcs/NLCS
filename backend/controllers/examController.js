@@ -12,9 +12,19 @@ const formatDate = (date) => {
 
 const addExam = async (req, res) => {
   try {
-    const { CertificateID, NgayThi, Buoi, SiSoToiDa } = req.body
+    const {
+      CertificateID,
+      NgayThi,
+      Buoi,
+      SiSoToiDa
+    } = req.body
 
     const certificate = await Certificate.findById(CertificateID)
+    if (!certificate) {
+      return res.status(404).json({
+        message: 'Không tìm thấy chứng chỉ'
+      })
+    }
 
     const buoiFormatted = Buoi === 'Sáng' ? 'S' : 'C'
     const ngayFormatted = formatDate(NgayThi)
@@ -29,10 +39,17 @@ const addExam = async (req, res) => {
     })
 
     await newExam.save()
-    res.status(201).json({ message: 'Thêm đợt thi thành công', data: newExam })
+
+    res.status(201).json({
+      message: 'Thêm đợt thi thành công',
+      data: newExam
+    })
   } catch (error) {
     console.error('Lỗi thêm đợt thi:', error.message)
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
+    res.status(500).json({
+      message: 'Lỗi server',
+      error: error.message
+    })
   }
 }
 
@@ -42,30 +59,47 @@ const getExams = async (req, res) => {
     res.status(200).json(exams)
   } catch (error) {
     console.error('Lỗi lấy đợt thi:', error.message)
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
+    res.status(500).json({
+      message: 'Lỗi server',
+      error: error.message
+    })
   }
 }
 
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params
-    const {CertificateID, NgayThi, Buoi, SiSoToiDa } = req.body
+    const {
+      CertificateID,
+      NgayThi,
+      Buoi,
+      SiSoToiDa
+    } = req.body
 
     const certificate = await Certificate.findById(CertificateID)
-    const buoiFormatted = Buoi.charAt(0).toUpperCase() // S/C
+    const buoiFormatted = Buoi.charAt(0).toUpperCase()
     const ngayFormatted = formatDate(NgayThi)
     const TenKhoaThi = `${certificate.TenChungChi}-${ngayFormatted}-${buoiFormatted}`
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,
-      { CertificateID, NgayThi, Buoi, SiSoToiDa, TenKhoaThi },
+      {
+        CertificateID,
+        NgayThi,
+        Buoi,
+        SiSoToiDa,
+        TenKhoaThi
+      },
       { new: true, runValidators: true }
     )
 
     res.status(200).json(updatedExam)
   } catch (error) {
     console.error('Lỗi cập nhật đợt thi:', error.message)
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
+    res.status(500).json({
+      message: 'Lỗi server',
+      error: error.message
+    })
   }
 }
 
@@ -74,14 +108,22 @@ const deleteExam = async (req, res) => {
     const { id } = req.params
 
     await Promise.all([
-      Account.updateMany({ KhoaThi: id }, { $pull: { KhoaThi: id } }),
+      Account.updateMany(
+        { KhoaThi: id },
+        { $pull: { KhoaThi: id } }
+      ),
       Exam.findByIdAndDelete(id)
     ])
 
-    res.status(200).json({ message: 'Xóa đợt thi thành công và cập nhật các tài khoản liên quan' })
+    res.status(200).json({
+      message: 'Xóa đợt thi thành công và cập nhật các tài khoản liên quan'
+    })
   } catch (error) {
     console.error('Lỗi xóa đợt thi:', error.message)
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
+    res.status(500).json({
+      message: 'Lỗi server',
+      error: error.message
+    })
   }
 }
 
