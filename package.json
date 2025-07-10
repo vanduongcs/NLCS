@@ -1,0 +1,16 @@
+{
+  "name": "webql",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"yarn --cwd backend dev\" \"yarn --cwd frontend dev\"",
+    "lint": "eslint './src/**/*.{js,jsx}'"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "react": "18"
+  }
+}
