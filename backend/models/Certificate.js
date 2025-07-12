@@ -7,29 +7,24 @@ const CertificateSchema = new mongoose.Schema({
     trim: true,
     enum: ['Tin học', 'Ngoại ngữ']
   },
-
   TenChungChi: {
     type: String,
     required: true,
     trim: true
   },
-
   LePhiThi: {
     type: Number,
     required: true
   },
-
   HocPhi: {
     type: Number,
     required: true,
     default: 0
   },
-
   ThoiHan: {
     type: Number
   }
-},
-  { timestamps: true })
+}, { timestamps: true })
 
 const Certificate = mongoose.model('Certificate', CertificateSchema)
 

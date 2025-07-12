@@ -1,32 +1,27 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-// Custome
 import API from '../../api.jsx'
-
 
 function RoleAuth({ children }) {
   const navigate = useNavigate()
 
   const Auth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/dang-nhap');
-        return;
-      }
+      const token = localStorage.getItem('token')
+      if (!token) return navigate('/dang-nhap')
+
       const res = await API.get('/account/tim-tai-khoan/', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
       if (res.data.Loai !== 'admin') {
-        navigate('/dang-nhap');
         localStorage.removeItem('token')
+        return navigate('/dang-nhap')
       }
     } catch (error) {
-      console.error('Lỗi xác thực quyền:', error);
-      navigate('/dang-nhap');
+      console.error('❌ RoleAuth token lỗi:', error)
+      localStorage.removeItem('token')
+      navigate('/dang-nhap')
     }
   }
 
@@ -34,10 +29,7 @@ function RoleAuth({ children }) {
     Auth()
   }, [])
 
-
-  return (
-    children
-  )
+  return children
 }
 
 export default RoleAuth

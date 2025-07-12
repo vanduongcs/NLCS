@@ -6,30 +6,25 @@ const CourseSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-
   IDChungChi: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Certificate',
     required: true
   },
-
   NgayKhaiGiang: {
     type: Date,
     required: true
   },
-
   NgayKetThuc: {
     type: Date,
     required: true
   },
-
   Buoi: {
     type: String,
     required: true,
     trim: true,
     enum: ['Sáng', 'Chiều', 'Tối']
   },
-
   SiSoToiDa: {
     type: Number,
     default: 1,
@@ -37,7 +32,6 @@ const CourseSchema = new mongoose.Schema({
     min: 1,
     max: 40
   },
-
   SiSoHienTai: {
     type: Number,
     default: 0,
@@ -45,7 +39,6 @@ const CourseSchema = new mongoose.Schema({
     min: 0,
     max: 40
   },
-
   LichHoc: {
     type: String,
     required: true,
@@ -55,4 +48,5 @@ const CourseSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 const Course = mongoose.model('Course', CourseSchema)
+
 export default Course
