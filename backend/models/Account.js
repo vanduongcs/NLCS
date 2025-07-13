@@ -29,6 +29,20 @@ const AccountSchema = new mongoose.Schema({
     minLength: 6,
     maxLength: 256
   },
+  CCCD: {
+    type: String,
+    required: true,
+    trim: true,
+    minLength: 12,
+    maxLength: 12
+  },
+  SDT: {
+    type: String,
+    required: true,
+    trim: true,
+    minLenght: 10,
+    maxLength: 10
+  },
   KhoaHocDaThamGia: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',

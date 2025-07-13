@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // MUI
 import Table from '@mui/material/Table'
@@ -21,6 +21,16 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
   const [page, setPage] = useState(1)
   const rowsPerPage = 10
 
+  // Tự động chọn cột đầu tiên hợp lệ nếu chưa chọn
+  useEffect(() => {
+    if (!selectedColumn) {
+      const firstVisibleColumn = columns.find(col => !col.isAction)
+      if (firstVisibleColumn) {
+        setSelectedColumn(firstVisibleColumn.key)
+      }
+    }
+  }, [columns, selectedColumn])
+
   const formatDate = (dateValue) => {
     if (!dateValue) return ''
     const date = new Date(dateValue)
@@ -33,39 +43,30 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
 
   const isDateColumn = (columnKey) => {
     const column = columns.find(col => col.key === columnKey)
-    return column && column.isDate
+    return column?.isDate
   }
 
+  const removeAccents = (str) =>
+    str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+
   const filteredRows = rows.filter(row => {
-    if (!searchText) return true
+    if (!searchText || !selectedColumn) return true
 
-    if (selectedColumn) {
-      const column = columns.find(col => col.key === selectedColumn)
-      const rawValue = row[selectedColumn]
-      const searchValue = column?.customSearchValue
-        ? column.customSearchValue(row)
-        : rawValue
+    const column = columns.find(col => col.key === selectedColumn)
+    if (!column || column.isAction) return true // Không lọc theo cột không hợp lệ
 
-      if (!searchValue) return false
+    const rawValue = row[selectedColumn]
+    const searchValue = column?.customSearchValue
+      ? column.customSearchValue(row)
+      : rawValue
 
-      return isDateColumn(selectedColumn)
-        ? formatDate(searchValue).toLowerCase().includes(searchText.toLowerCase())
-        : searchValue.toString().toLowerCase().includes(searchText.toLowerCase())
-    }
+    if (!searchValue) return false
 
-    return columns.some(column => {
-      if (column.isAction) return false
-      const rawValue = row[column.key]
-      const searchValue = column.customSearchValue
-        ? column.customSearchValue(row)
-        : rawValue
+    const compareValue = isDateColumn(selectedColumn)
+      ? formatDate(searchValue)
+      : searchValue.toString()
 
-      if (!searchValue) return false
-
-      return isDateColumn(column.key)
-        ? formatDate(searchValue).toLowerCase().includes(searchText.toLowerCase())
-        : searchValue.toString().toLowerCase().includes(searchText.toLowerCase())
-    })
+    return removeAccents(compareValue).includes(removeAccents(searchText.trim()))
   })
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage))
@@ -97,7 +98,6 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
               setPage(1)
             }}
           >
-            <MenuItem value="">Tất cả</MenuItem>
             {columns.filter(col => !col.isAction).map((col) => (
               <MenuItem key={col.key} value={col.key}>{col.label}</MenuItem>
             ))}

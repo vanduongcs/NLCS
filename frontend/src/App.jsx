@@ -12,9 +12,8 @@ import TrangChu from './pages/UserPages/TrangChu.jsx'
 import CCNgoaiNgu from './pages/UserPages/CCNgoaiNgu.jsx'
 import CCTinHoc from './pages/UserPages/CCTinHoc.jsx'
 import DotThi from './pages/UserPages/DotThi.jsx'
+import LichThi from './pages/UserPages/LichThi.jsx'
 import LichKhaiGiang from './pages/UserPages/LichKhaiGiang.jsx'
-import DKOn from './pages/UserPages/DKOn.jsx'
-import DKThi from './pages/UserPages/DKThi.jsx'
 import KetQua from './pages/UserPages/KetQua.jsx'
 import KTChungChi from './pages/UserPages/KTChungChi.jsx'
 
@@ -47,10 +46,8 @@ function Layout() {
 
           {/* Phần User */}
           <Route path='/trang-chu' element={<PrivateRoute><TrangChu /></PrivateRoute>} />
-          <Route path='/dot-thi' element={<PrivateRoute><DotThi /></PrivateRoute>} />
+          <Route path='/lich-thi' element={<PrivateRoute><LichThi /></PrivateRoute>} />
           <Route path='/lich-khai-giang' element={<PrivateRoute><LichKhaiGiang /></PrivateRoute>} />
-          <Route path='/dang-ky-khoa-on' element={<PrivateRoute><DKOn /></PrivateRoute>} />
-          <Route path='/dang-ky-thi' element={<PrivateRoute><DKThi /></PrivateRoute>} />
           <Route path='/ket-qua' element={<PrivateRoute><KetQua /></PrivateRoute>} />
           <Route path='/xac-thuc-chung-chi' element={<PrivateRoute><KTChungChi /></PrivateRoute>} />
 

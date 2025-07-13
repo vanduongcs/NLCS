@@ -5,28 +5,28 @@ import {
 import Swal from 'sweetalert2'
 import axios from 'axios'
 
-// Table tùy chỉnh
+// Custom Table
 import TableCustome from '../../components/Table/TableCustome.jsx'
 
-function LichKhaiGiang() {
+function LichThi() {
   const [tab, setTab] = useState(0)
-  const [courses, setCourses] = useState([])
+  const [exams, setExams] = useState([])
   const [user, setUser] = useState(null)
 
   const token = localStorage.getItem('token')
   const config = { headers: { Authorization: `Bearer ${token}` } }
 
   useEffect(() => {
-    fetchCourses()
+    fetchExams()
     fetchUser()
   }, [])
 
-  const fetchCourses = async () => {
+  const fetchExams = async () => {
     try {
-      const res = await axios.get('http://localhost:2025/api/course/tat-ca-khoa-on')
-      setCourses(res.data)
+      const res = await axios.get('http://localhost:2025/api/exam/tat-ca-dot-thi')
+      setExams(res.data)
     } catch (err) {
-      console.error('Lỗi tải khóa học:', err)
+      console.error('Lỗi tải kỳ thi:', err)
     }
   }
 
@@ -39,14 +39,14 @@ function LichKhaiGiang() {
     }
   }
 
-  const isRegistered = (courseId) => user?.KhoaHocDaThamGia?.includes(courseId)
+  const isRegistered = (examId) => user?.KhoaThiThamGia?.includes(examId)
 
-  const handleDangKyOrHuy = async (course, action) => {
+  const handleDangKyOrHuy = async (exam, action) => {
     if (!user) return
-    const oldList = user.KhoaHocDaThamGia || []
+    const oldList = user.KhoaThiThamGia || []
     const newList = action === 'add'
-      ? [...oldList, course._id]
-      : oldList.filter(id => id !== course._id)
+      ? [...oldList, exam._id]
+      : oldList.filter(id => id !== exam._id)
 
     try {
       await axios.put(`http://localhost:2025/api/account/cap-nhat-tai-khoan/${user.TenTaiKhoan}`, {
@@ -54,14 +54,14 @@ function LichKhaiGiang() {
         MatKhau: user.MatKhau,
         SDT: user.SDT,
         Loai: user.Loai,
-        KhoaThiThamGia: user.KhoaThiThamGia,
-        DSKhoaHocDaThamGia: oldList,
-        KhoaHocDaThamGia: newList
+        KhoaHocDaThamGia: user.KhoaHocDaThamGia,
+        DSKhoaThiThamGia: oldList,
+        KhoaThiThamGia: newList
       }, config)
 
       const msg = action === 'add' ? 'Đăng ký thành công!' : 'Hủy đăng ký thành công!'
       Swal.fire(msg, '', 'success')
-      fetchCourses()
+      fetchExams()
       fetchUser()
     } catch (err) {
       console.error('Lỗi cập nhật:', err)
@@ -69,42 +69,53 @@ function LichKhaiGiang() {
     }
   }
 
-  const renderActionButton = (course) => {
-    const daDangKy = isRegistered(course._id)
-    const hetCho = course.SiSoToiDa !== undefined && course.SiSoHienTai >= course.SiSoToiDa
+  const renderActionButton = (exam) => {
+    const daDangKy = isRegistered(exam._id)
+    const hetCho = exam.SiSoToiDa !== undefined && exam.SiSoHienTai >= exam.SiSoToiDa
+
+    if (hetCho && !daDangKy) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <Button
+            variant="outlined"
+            color="error"
+            disabled
+            sx={{ minWidth: 120, height: 36, mx: 'auto' }}
+          >
+            Đã hết chỗ
+          </Button>
+        </Box>
+      )
+    }
 
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
         <Button
-          variant={hetCho && !daDangKy ? 'outlined' : daDangKy ? 'outlined' : 'contained'}
-          color={hetCho && !daDangKy ? 'error' : daDangKy ? 'secondary' : 'primary'}
+          variant={daDangKy ? 'outlined' : 'contained'}
+          color={daDangKy ? 'secondary' : 'primary'}
           size="small"
-          disabled={hetCho && !daDangKy}
-          onClick={() => handleDangKyOrHuy(course, daDangKy ? 'remove' : 'add')}
           sx={{ minWidth: 120, height: 36, mx: 'auto' }}
+          onClick={() => handleDangKyOrHuy(exam, daDangKy ? 'remove' : 'add')}
         >
-          {hetCho && !daDangKy
-            ? 'Đã hết chỗ'
-            : daDangKy
-              ? 'Hủy đăng ký'
-              : 'Đăng ký'}
+          {daDangKy ? 'Hủy đăng ký' : 'Đăng ký'}
         </Button>
       </Box>
     )
   }
 
   const columns = [
-    { label: 'Tên khóa học', key: 'TenKhoaHoc' },
-    { label: 'Ngày khai giảng', key: 'NgayKhaiGiang', isDate: true },
+    { label: 'Tên kỳ thi', key: 'TenKyThi' },
+    { label: 'Ngày thi', key: 'NgayThi', isDate: true },
     {
       label: 'Chứng chỉ',
       key: 'IDChungChi',
       render: (val, row) => row.IDChungChi?.TenChungChi || 'Không rõ'
     },
     {
-      label: 'Số lượng',
+      label: 'Sĩ số',
       key: 'SiSoHienTai',
-      render: (val, row) => `${row.SiSoHienTai}/${row.SiSoToiDa ?? '∞'}`
+      render: (val, row) =>
+        `${row.SiSoHienTai}/${row.SiSoToiDa ?? '∞'}`
     },
     {
       label: 'Thao tác',
@@ -114,13 +125,13 @@ function LichKhaiGiang() {
     }
   ]
 
-  const coursesNgoaiNgu = courses.filter(c => c.IDChungChi?.Loai === 'Ngoại ngữ')
-  const coursesTinHoc = courses.filter(c => c.IDChungChi?.Loai === 'Tin học')
+  const examsNgoaiNgu = exams.filter(e => e.IDChungChi?.Loai === 'Ngoại ngữ')
+  const examsTinHoc = exams.filter(e => e.IDChungChi?.Loai === 'Tin học')
 
   return (
     <Box sx={{ px: 3, py: 4 }}>
       <Typography variant="h5" gutterBottom align="center" fontWeight="bold">
-        Danh sách các khóa học đang mở
+        Danh sách các kỳ thi chứng chỉ
       </Typography>
 
       <Tabs value={tab} onChange={(e, val) => setTab(val)} centered sx={{ mb: 2 }}>
@@ -130,19 +141,19 @@ function LichKhaiGiang() {
 
       {tab === 0 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Khóa học Ngoại ngữ</Typography>
-          <TableCustome columns={columns} rows={coursesNgoaiNgu} />
+          <Typography variant="h6" gutterBottom>Kỳ thi Ngoại ngữ</Typography>
+          <TableCustome columns={columns} rows={examsNgoaiNgu} />
         </Box>
       )}
 
       {tab === 1 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Khóa học Tin học</Typography>
-          <TableCustome columns={columns} rows={coursesTinHoc} />
+          <Typography variant="h6" gutterBottom>Kỳ thi Tin học</Typography>
+          <TableCustome columns={columns} rows={examsTinHoc} />
         </Box>
       )}
     </Box>
   )
 }
 
-export default LichKhaiGiang
+export default LichThi

@@ -57,42 +57,49 @@ const getAccount = async (req, res) => {
 const updateAccount = async (req, res) => {
   try {
     const { TenTaiKhoan } = req.params
-    const {
-      TenHienThi,
-      MatKhau,
-      Loai,
-      KhoaHocDaThamGia,
-      KhoaThiThamGia,
-      DSChungChiDaNhan = [],
-      DSKhoaHocDaThamGia = [],
-      DSKhoaThiThamGia = []
-    } = req.body
+    const updateFields = {}
+
+    const allowedFields = ['TenHienThi', 'MatKhau', 'SDT', 'Loai', 'KhoaHocDaThamGia', 'KhoaThiThamGia']
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateFields[field] = req.body[field]
+      }
+    })
 
     const updatedAccount = await Account.findOneAndUpdate(
       { TenTaiKhoan },
-      { $set: { TenHienThi, MatKhau, Loai, KhoaHocDaThamGia, KhoaThiThamGia } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     )
 
-    const addedKHDTG = KhoaHocDaThamGia.filter(id => !DSKhoaHocDaThamGia.includes(id))
-    const removedKHDTG = DSKhoaHocDaThamGia.filter(id => !KhoaHocDaThamGia.includes(id))
+    // Cập nhật số lượng học/thi nếu liên quan
+    if (updateFields.KhoaHocDaThamGia || updateFields.KhoaThiThamGia) {
+      const {
+        KhoaHocDaThamGia = [],
+        KhoaThiThamGia = [],
+        DSKhoaHocDaThamGia = [],
+        DSKhoaThiThamGia = []
+      } = req.body
 
-    const addedKTTG = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
-    const removedKTTG = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
+      const addedKHDTG = KhoaHocDaThamGia.filter(id => !DSKhoaHocDaThamGia.includes(id))
+      const removedKHDTG = DSKhoaHocDaThamGia.filter(id => !KhoaHocDaThamGia.includes(id))
 
-    const updateCoursePromises = [
-      ...addedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } }, { new: true })),
-      ...removedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }, { new: true }))
-    ]
+      const addedKTTG = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
+      const removedKTTG = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
 
-    const updateExamPromises = [
-      ...addedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } }, { new: true })),
-      ...removedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }, { new: true }))
-    ]
+      const updateCoursePromises = [
+        ...addedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
+        ...removedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }))
+      ]
+      const updateExamPromises = [
+        ...addedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
+        ...removedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }))
+      ]
 
-    await Promise.all([...updateCoursePromises, ...updateExamPromises])
+      await Promise.all([...updateCoursePromises, ...updateExamPromises])
+    }
 
-    // 🔄 Tự động đồng bộ ChungChiDaNhan theo kết quả "Đã lấy"
+    // Cập nhật ChungChiDaNhan nếu cần
     const results = await Result.find({ IDNguoiDung: updatedAccount._id, TrangThai: 'Đã lấy' }).populate({
       path: 'IDKyThi',
       select: 'IDChungChi'
@@ -100,7 +107,7 @@ const updateAccount = async (req, res) => {
 
     const newChungChiDaNhan = results
       .map(r => r.IDKyThi?.IDChungChi)
-      .filter(id => !!id)
+      .filter(Boolean)
       .map(id => id.toString())
 
     updatedAccount.ChungChiDaNhan = newChungChiDaNhan
