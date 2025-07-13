@@ -5,6 +5,7 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Checkbox from '@mui/material/Checkbox'
 import ListItemText from '@mui/material/ListItemText'
+import Autocomplete from '@mui/material/Autocomplete'
 
 function FieldCustome({ label, val, func, type, options, multiple, onChange }) {
   const handleChange = (event) => {
@@ -15,7 +16,6 @@ function FieldCustome({ label, val, func, type, options, multiple, onChange }) {
   }
 
   if (type === 'select') {
-
     return (
       <FormControl fullWidth sx={{ mt: 2 }}>
         <InputLabel>{label}</InputLabel>
@@ -26,8 +26,8 @@ function FieldCustome({ label, val, func, type, options, multiple, onChange }) {
           MenuProps={{ disableScrollLock: true }}
           label={label}
           renderValue={(selected) =>
-            multiple ?
-              selected.map((id) => options.find((option) => option.value === id)?.label || '').join(', ')
+            multiple
+              ? selected.map((id) => options.find((option) => option.value === id)?.label || '').join(', ')
               : options.find((option) => option.value === val)?.label || ''
           }
         >
@@ -42,12 +42,37 @@ function FieldCustome({ label, val, func, type, options, multiple, onChange }) {
     )
   }
 
+  if (type === 'autocomplete') {
+    const selectedOption = options?.find(option => option.value === val) || null
+
+    return (
+      <Autocomplete
+        fullWidth
+        options={options || []}
+        getOptionLabel={(option) => option.label || ''}
+        filterOptions={(opts, { inputValue }) =>
+          opts.filter(opt =>
+            opt.label?.toLowerCase().includes(inputValue.toLowerCase())
+          )
+        }
+        isOptionEqualToValue={(option, value) => option.value === value.value}
+        value={selectedOption}
+        onChange={(event, newValue) => {
+          func(newValue ? newValue.value : '')
+          if (onChange) onChange(newValue ? newValue.value : '')
+        }}
+        renderInput={(params) => (
+          <TextField {...params} label={label} sx={{ mt: 2 }} />
+        )}
+      />
+    )
+  }
+
   if (type === 'date') {
-    const formattedValue = val instanceof Date ?
-      val.toISOString().slice(0, 10)
-      : (typeof val === 'string'
-        && val.match(/^\d{4}-\d{2}-\d{2}$/) ?
-        val
+    const formattedValue = val instanceof Date
+      ? val.toISOString().slice(0, 10)
+      : (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)
+        ? val
         : '')
 
     return (
@@ -83,7 +108,7 @@ function FieldCustome({ label, val, func, type, options, multiple, onChange }) {
       }}
       sx={{ mt: 2 }}
       type={type === 'number' ? 'number' : type}
-      autoComplete='off'
+      autoComplete="off"
     />
   )
 }

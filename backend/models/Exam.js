@@ -1,12 +1,12 @@
 import mongoose from 'mongoose'
 
 const ExamSchema = new mongoose.Schema({
-  CertificateID: {
+  IDChungChi: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Certificate',
     required: true
   },
-  TenKhoaThi: {
+  TenKyThi: {
     type: String,
     required: true,
     trim: true

@@ -12,7 +12,7 @@ function ExamForm({ columnsCanEdit, formStates, pageContent, handleAdd, handleUp
         bgcolor: (theme) => theme.palette.background.paper,
         boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 10px rgba(243, 243, 243, 0.31)' : 12,
         p: '10% 10%',
-        mt: '72px',
+        mt: '39px',
         minHeight: '85.15%',
         textAlign: 'center',
         borderRadius: 2,

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import Exam from '../models/Exam.js'
 import Certificate from '../models/Certificate.js'
 import Account from '../models/Account.js'
@@ -13,13 +14,13 @@ const formatDate = (date) => {
 const addExam = async (req, res) => {
   try {
     const {
-      CertificateID,
+      IDChungChi,
       NgayThi,
       Buoi,
       SiSoToiDa
     } = req.body
 
-    const certificate = await Certificate.findById(CertificateID)
+    const certificate = await Certificate.findById(IDChungChi)
     if (!certificate) {
       return res.status(404).json({
         message: 'Không tìm thấy chứng chỉ'
@@ -28,11 +29,11 @@ const addExam = async (req, res) => {
 
     const buoiFormatted = Buoi === 'Sáng' ? 'S' : 'C'
     const ngayFormatted = formatDate(NgayThi)
-    const TenKhoaThi = `${certificate.TenChungChi}-${ngayFormatted}-${buoiFormatted}`
+    const TenKyThi = `${certificate.TenChungChi}-${ngayFormatted}-${buoiFormatted}`
 
     const newExam = new Exam({
-      CertificateID,
-      TenKhoaThi,
+      IDChungChi,
+      TenKyThi,
       NgayThi,
       Buoi,
       SiSoToiDa
@@ -55,7 +56,7 @@ const addExam = async (req, res) => {
 
 const getExams = async (req, res) => {
   try {
-    const exams = await Exam.find().populate('CertificateID')
+    const exams = await Exam.find().populate('IDChungChi')
     res.status(200).json(exams)
   } catch (error) {
     console.error('Lỗi lấy đợt thi:', error.message)
@@ -70,25 +71,25 @@ const updateExam = async (req, res) => {
   try {
     const { id } = req.params
     const {
-      CertificateID,
+      IDChungChi,
       NgayThi,
       Buoi,
       SiSoToiDa
     } = req.body
 
-    const certificate = await Certificate.findById(CertificateID)
+    const certificate = await Certificate.findById(IDChungChi)
     const buoiFormatted = Buoi.charAt(0).toUpperCase()
     const ngayFormatted = formatDate(NgayThi)
-    const TenKhoaThi = `${certificate.TenChungChi}-${ngayFormatted}-${buoiFormatted}`
+    const TenKyThi = `${certificate.TenChungChi}-${ngayFormatted}-${buoiFormatted}`
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,
       {
-        CertificateID,
+        IDChungChi,
         NgayThi,
         Buoi,
         SiSoToiDa,
-        TenKhoaThi
+        TenKyThi
       },
       { new: true, runValidators: true }
     )

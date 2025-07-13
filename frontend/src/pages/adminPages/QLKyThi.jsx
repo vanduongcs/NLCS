@@ -27,14 +27,14 @@ function QLKyThi() {
   const [Exams, SetExams] = useState([])
 
   // Các thuộc tính cho phép chỉnh sửa
-  const [CertificateID, SetCertificateID] = useState('')
+  const [IDChungChi, SetIDChungChi] = useState('')
   const [NgayThi, SetNgayThi] = useState('')
   const [Buoi, SetBuoi] = useState('')
   const [SiSoToiDa, SetSiSoToiDa] = useState('')
   const [SiSoHienTai, SetSiSoHienTai] = useState('')
 
   const formStates = {
-    CertificateID, SetCertificateID,
+    IDChungChi, SetIDChungChi,
     NgayThi, SetNgayThi,
     Buoi, SetBuoi,
     SiSoToiDa, SetSiSoToiDa,
@@ -68,8 +68,8 @@ function QLKyThi() {
   }
 
   useEffect(() => {
-    fetchExams()
     fetchCertificates()
+    fetchExams()
   }, [])
 
   const handleDelete = async (id) => {
@@ -88,7 +88,7 @@ function QLKyThi() {
   }
 
   const handleEdit = (row) => {
-    SetCertificateID(row.CertificateID?._id || '')
+    SetIDChungChi(row.IDChungChi?._id || '')
     SetNgayThi(row.NgayThi ? new Date(row.NgayThi).toISOString().slice(0, 10) : '')
     SetBuoi(row.Buoi)
     SetSiSoToiDa(row.SiSoToiDa?.toString() || '')
@@ -97,7 +97,7 @@ function QLKyThi() {
 
   const handleAdd = () => {
     const newExam = {
-      CertificateID,
+      IDChungChi,
       NgayThi: new Date(NgayThi),
       Buoi,
       SiSoToiDa: SiSoToiDa ? Number(SiSoToiDa) : undefined
@@ -120,7 +120,7 @@ function QLKyThi() {
 
   const handleUpdate = () => {
     const updated = {
-      CertificateID,
+      IDChungChi,
       NgayThi: new Date(NgayThi),
       Buoi,
       SiSoToiDa: Number(SiSoToiDa) || undefined
@@ -142,42 +142,40 @@ function QLKyThi() {
   }
 
   const resetForm = () => {
-    SetCertificateID('')
+    SetIDChungChi('')
     SetNgayThi('')
     SetBuoi('')
     SetSiSoToiDa('')
     SetEditingExam(null)
   }
 
-  // Hàm tìm chứng chỉ dựa vào id
-  const findCert = (CertIDFromExam) => {
-    return certificates.find(cert => cert._id === CertIDFromExam._id)
-  }
-
   // Trường dữ liệu hiển thị trên bảng
   const columns = [
-    { label: 'Tên khóa thi', key: 'TenKhoaThi' },
+    { label: 'Tên kỳ thi', key: 'TenKyThi' },
     {
-      label: 'Tên chứng chỉ',
-      key: 'CertificateID',
-      render: (value) => {
-        const cert = findCert(value)
+      label: 'Chứng chỉ',
+      key: 'IDChungChi',
+      render: (value, row) => {
+        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
+        const cert = certificates.find(c => String(c._id) === String(certId))
         return cert ? cert.TenChungChi : ''
       }
     },
     {
       label: 'Loại',
-      key: 'CertificateID',
-      render: (value) => {
-        const cert = findCert(value)
+      key: 'IDChungChi',
+      render: (value, row) => {
+        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
+        const cert = certificates.find(c => String(c._id) === String(certId))
         return cert ? cert.Loai : ''
       }
     },
     {
       label: 'Lệ phí thi',
-      key: 'CertificateID',
-      render: (value) => {
-        const cert = findCert(value)
+      key: 'IDChungChi',
+      render: (value, row) => {
+        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
+        const cert = certificates.find(c => String(c._id) === String(certId))
         return cert ? cert.LePhiThi : ''
       }
     },
@@ -194,7 +192,7 @@ function QLKyThi() {
   // Trường dữ liệu cho phép chỉnh sửa
   const columnsCanEdit = [
     {
-      label: 'Chọn chứng chỉ', key: 'CertificateID', type: 'select',
+      label: 'Chọn chứng chỉ', key: 'IDChungChi', type: 'select',
       options: certificates.map(cert => ({
         label: cert.TenChungChi,
         value: cert._id

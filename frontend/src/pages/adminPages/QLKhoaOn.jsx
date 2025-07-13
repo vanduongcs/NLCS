@@ -211,7 +211,6 @@ function QLKhoaOn() {
     {
       label: 'Buổi', key: 'Buoi', type: 'select',
       options: [
-        { value: 'Sáng', label: 'Sáng' },
         { value: 'Chiều', label: 'Chiều' },
         { value: 'Tối', label: 'Tối' }
       ]

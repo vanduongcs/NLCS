@@ -21,7 +21,6 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
   const [page, setPage] = useState(1)
   const rowsPerPage = 10
 
-  // Hàm định dạng ngày giờ thành DD/MM/YYYY
   const formatDate = (dateValue) => {
     if (!dateValue) return ''
     const date = new Date(dateValue)
@@ -32,46 +31,49 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
     return `${day}/${month}/${year}`
   }
 
-  // Hàm kiểm tra cột có phải là ngày giờ không
   const isDateColumn = (columnKey) => {
     const column = columns.find(col => col.key === columnKey)
     return column && column.isDate
   }
 
-  // Hàm lọc dữ liệu theo search và cột được chọn
   const filteredRows = rows.filter(row => {
-    if (!searchText) return true // Không lọc nếu searchText rỗng
+    if (!searchText) return true
+
     if (selectedColumn) {
-      const value = row[selectedColumn]
-      if (!value) return false
+      const column = columns.find(col => col.key === selectedColumn)
+      const rawValue = row[selectedColumn]
+      const searchValue = column?.customSearchValue
+        ? column.customSearchValue(row)
+        : rawValue
+
+      if (!searchValue) return false
+
       return isDateColumn(selectedColumn)
-        ? formatDate(value).toLowerCase().includes(searchText.toLowerCase())
-        : value.toString().toLowerCase().includes(searchText.toLowerCase())
+        ? formatDate(searchValue).toLowerCase().includes(searchText.toLowerCase())
+        : searchValue.toString().toLowerCase().includes(searchText.toLowerCase())
     }
-    return Object.keys(row).some(key => {
-      const value = row[key]
-      if (!value || columns.find(col => col.key === key)?.isAction) return false
-      return isDateColumn(key)
-        ? formatDate(value).toLowerCase().includes(searchText.toLowerCase())
-        : value.toString().toLowerCase().includes(searchText.toLowerCase())
+
+    return columns.some(column => {
+      if (column.isAction) return false
+      const rawValue = row[column.key]
+      const searchValue = column.customSearchValue
+        ? column.customSearchValue(row)
+        : rawValue
+
+      if (!searchValue) return false
+
+      return isDateColumn(column.key)
+        ? formatDate(searchValue).toLowerCase().includes(searchText.toLowerCase())
+        : searchValue.toString().toLowerCase().includes(searchText.toLowerCase())
     })
   })
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage))
   const paginatedRows = filteredRows.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
-  const handlePageChange = (event, value) => {
-    setPage(value)
-  }
-
-  const handleColumnChange = (event) => {
-    setSelectedColumn(event.target.value)
-    setPage(1)
-  }
-
   return (
     <Box>
-      {/* Search and Column Select */}
+      {/* Search & Filter */}
       <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
         <TextField
           label="Tìm kiếm"
@@ -82,26 +84,6 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
             setSearchText(e.target.value)
             setPage(1)
           }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              color: (theme) => theme.palette.text.primary,
-              '& fieldset': {
-                borderColor: (theme) => theme.palette.text.primary
-              },
-              '&:hover fieldset': {
-                borderColor: (theme) => theme.palette.text.primary
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: (theme) => theme.palette.text.primary
-              }
-            },
-            '& .MuiInputLabel-root': {
-              color: (theme) => theme.palette.text.primary
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: (theme) => theme.palette.text.primary
-            }
-          }}
         />
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="column-select-label">Cột</InputLabel>
@@ -110,41 +92,21 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
             id="column-select"
             value={selectedColumn}
             label="Cột"
-            onChange={handleColumnChange}
-            sx={{
-              color: (theme) => theme.palette.text.primary,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: (theme) => theme.palette.text.primary
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: (theme) => theme.palette.text.primary
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: (theme) => theme.palette.text.primary
-              }
+            onChange={(e) => {
+              setSelectedColumn(e.target.value)
+              setPage(1)
             }}
           >
             <MenuItem value="">Tất cả</MenuItem>
-            {columns
-              .filter(column => !column.isAction)
-              .map((column) => (
-                <MenuItem key={column.key} value={column.key}>
-                  {column.label}
-                </MenuItem>
-              ))}
+            {columns.filter(col => !col.isAction).map((col) => (
+              <MenuItem key={col.key} value={col.key}>{col.label}</MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Box>
 
       {/* Table */}
-      <TableContainer
-        sx={{
-          bgcolor: (theme) => theme.palette.background.paper,
-          boxShadow: (theme) =>
-            theme.palette.mode === 'dark' ? '0 4px 10px rgba(243, 243, 243, 0.31)' : 12,
-          borderRadius: 2
-        }}
-      >
+      <TableContainer>
         <Table>
           <TableHeaderCustome columns={columns} />
           <TableBodyCustome
@@ -160,7 +122,7 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <Pagination
           page={page}
-          onChange={handlePageChange}
+          onChange={(e, val) => setPage(val)}
           count={totalPages}
           color="primary"
         />
