@@ -154,6 +154,7 @@ function QLKetQua() {
     { label: 'Điểm 3', key: 'Diem3' },
     { label: 'Điểm 4', key: 'Diem4' },
     { label: 'Điểm tổng kết', key: 'DiemTK' },
+    { label: 'Kết quả', key: 'KQ' },
     { label: 'Ngày cấp', key: 'NgayCap', isDate: true },
     { label: 'Ngày hết hạn', key: 'NgayHetHan', isDate: true },
     { label: 'Trạng thái', key: 'TrangThai' },

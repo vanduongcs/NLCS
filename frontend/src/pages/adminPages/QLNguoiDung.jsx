@@ -26,6 +26,8 @@ function QLNguoiDung() {
   const [TenHienThi, SetTenHienThi] = useState('')
   const [TenTaiKhoan, SetTenTaiKhoan] = useState('')
   const [Loai, SetLoai] = useState('')
+  const [CCCD, SetCCCD] = useState('')
+  const [SDT, SetSDT] = useState('')
   const [MatKhau, SetMatKhau] = useState('')
   const [KhoaHocDaThamGia, SetKhoaHocDaThamGia] = useState([])
   const [KhoaThiThamGia, SetKhoaThiThamGia] = useState([])
@@ -39,7 +41,9 @@ function QLNguoiDung() {
     Loai, SetLoai,
     MatKhau, SetMatKhau,
     KhoaHocDaThamGia, SetKhoaHocDaThamGia,
-    KhoaThiThamGia, SetKhoaThiThamGia
+    KhoaThiThamGia, SetKhoaThiThamGia,
+    CCCD, SetCCCD,
+    SDT, SetSDT
   }
 
   const fetchAccounts = () => {
@@ -69,6 +73,8 @@ function QLNguoiDung() {
   const handleEdit = (row) => {
     SetTenHienThi(row.TenHienThi)
     SetTenTaiKhoan(row.TenTaiKhoan)
+    SetCCCD(row.CCCD || '')
+    SetSDT(row.SDT || '')
     SetMatKhau(row.MatKhau)
     SetLoai(row.Loai)
     SetKhoaHocDaThamGia(row.KhoaHocDaThamGia || [])
@@ -120,19 +126,62 @@ function QLNguoiDung() {
   ]
 
   const columnsCanEdit = [
-    { key: 'TenHienThi', label: 'Tên người dùng', type: 'text' },
+    {
+      key: 'TenHienThi',
+      label: 'Tên người dùng',
+      type: 'autocomplete',
+      options: Accounts.map(acc => ({ value: acc.TenHienThi, label: acc.TenHienThi }))
+    },
     { key: 'TenTaiKhoan', label: 'Tên tài khoản', type: 'text' },
-    { key: 'Loai', label: 'Vai trò', type: 'select', options: [ { value: 'user', label: 'User' }, { value: 'admin', label: 'Admin' } ] },
+    {
+      key: 'Loai',
+      label: 'Vai trò',
+      type: 'select',
+      options: [
+        { value: 'user', label: 'User' },
+        { value: 'admin', label: 'Admin' }
+      ]
+    },
+    { key: 'CCCD', label: 'CCCD', type: 'text' },
+    { key: 'SDT', label: 'Số điện thoại', type: 'text' },
     { key: 'MatKhau', label: 'Mật khẩu', type: 'text' },
     {
-      label: 'Khóa học đã tham gia', key: 'KhoaHocDaThamGia', type: 'select', multiple: true,
+      label: 'Khóa học đã tham gia',
+      key: 'KhoaHocDaThamGia',
+      type: 'select',
+      multiple: true,
       options: courses.map(c => ({ value: c._id, label: c.TenKhoaHoc }))
     },
     {
-      label: 'Kỳ thi đã tham gia', key: 'KhoaThiThamGia', type: 'select', multiple: true,
+      label: 'Kỳ thi đã tham gia',
+      key: 'KhoaThiThamGia',
+      type: 'select',
+      multiple: true,
       options: exams.map(e => ({ value: e._id, label: e.TenKyThi }))
     }
   ]
+
+  const handleAdd = async () => {
+    const newAccount = {
+      TenHienThi, TenTaiKhoan, MatKhau, Loai,
+      KhoaHocDaThamGia, KhoaThiThamGia,
+      CCCD, SDT
+    }
+
+    try {
+      await API.post(`/${routeAddress}/${funcAdd}`, newAccount)
+      Swal.fire('Thêm tài khoản thành công!', '', 'success')
+      fetchAccounts()
+      resetForm()
+    } catch (err) {
+      console.error('❌ Lỗi thêm tài khoản:', err.response?.data || err.message)
+      Swal.fire(
+        'Lỗi khi thêm tài khoản',
+        err.response?.data?.message || 'Vui lòng thử lại sau.',
+        'error'
+      )
+    }
+  }
 
   const handleUpdate = async () => {
     const updatedAccount = {
@@ -149,9 +198,35 @@ function QLNguoiDung() {
       })
   }
 
+  const handleDelete = async (id) => {
+    const confirm = await Swal.fire({
+      title: 'Xác nhận xóa?',
+      text: 'Hành động này sẽ xóa tài khoản khỏi hệ thống.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    })
+
+    if (confirm.isConfirmed) {
+      try {
+        await API.delete(`/account/xoa-tai-khoan/${id}`)
+        Swal.fire('Đã xóa!', '', 'success')
+        fetchAccounts()
+      } catch (err) {
+        console.error('❌ Lỗi xóa tài khoản:', err.response?.data || err.message)
+        Swal.fire('Lỗi khi xóa', err.response?.data?.message || 'Vui lòng thử lại sau.', 'error')
+      }
+    }
+  }
+
   const resetForm = () => {
     SetTenHienThi('')
     SetTenTaiKhoan('')
+    SetCCCD('')
+    SetSDT('')
     SetLoai('')
     SetMatKhau('')
     SetKhoaHocDaThamGia([])
@@ -168,11 +243,11 @@ function QLNguoiDung() {
       rows={Accounts}
       formStates={formStates}
       pageContent={pageContent}
-      handleAdd={() => {}}
+      handleAdd={handleAdd}
       handleEdit={handleEdit}
       isEditing={!!editingAccount}
       handleUpdate={handleUpdate}
-      handleDelete={() => {}}
+      handleDelete={handleDelete}
       resetForm={resetForm}
       FormName={FormName}
     />

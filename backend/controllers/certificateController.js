@@ -10,15 +10,20 @@ const addCertificate = async (req, res) => {
       TenChungChi,
       LePhiThi,
       HocPhi,
-      ThoiHan
+      ThoiHan,
+      DiemToiThieu
     } = req.body
+
+    // Log đầu vào để kiểm tra
+    console.log('[DEBUG] Dữ liệu thêm chứng chỉ:', req.body)
 
     const newCertificate = new Certificate({
       Loai,
       TenChungChi,
       LePhiThi,
       HocPhi,
-      ThoiHan
+      ThoiHan,
+      DiemToiThieu
     })
 
     await newCertificate.save()
@@ -28,8 +33,9 @@ const addCertificate = async (req, res) => {
       data: newCertificate
     })
   } catch (error) {
+    console.error('[ERROR] Không thể thêm chứng chỉ:', error)
     res.status(500).json({
-      message: 'Lỗi server',
+      message: 'Lỗi server khi thêm chứng chỉ',
       error: error.message
     })
   }

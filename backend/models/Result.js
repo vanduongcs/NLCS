@@ -47,6 +47,12 @@ const ResultSchema = new mongoose.Schema({
     trim: true,
     default: 'Chưa lấy',
     enum: ['Chưa lấy', 'Đã lấy']
+  },
+  KQ: {
+    type: String,
+    required: true,
+    trim: true,
+    default: 'Không đạt',
   }
 }, { timestamps: true })
 

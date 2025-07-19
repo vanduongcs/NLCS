@@ -106,7 +106,12 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
       </Box>
 
       {/* Table */}
-      <TableContainer>
+      <TableContainer 
+        sx={{
+          borderRadius: 2,
+          bgcolor: (theme) => theme.palette.background.paper, 
+          boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 10px rgba(243, 243, 243, 0.31)' : 12,
+        }}>
         <Table>
           <TableHeaderCustome columns={columns} />
           <TableBodyCustome

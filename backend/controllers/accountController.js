@@ -6,12 +6,31 @@ import Exam from '../models/Exam.js'
 
 const register = async (req, res) => {
   try {
-    const { Loai, TenHienThi, TenTaiKhoan, MatKhau } = req.body
+    const {
+      Loai,
+      TenHienThi,
+      TenTaiKhoan,
+      MatKhau,
+      CCCD,
+      SDT,
+      KhoaHocDaThamGia = [],
+      KhoaThiThamGia = []
+    } = req.body
 
     const existingAccount = await Account.findOne({ TenTaiKhoan })
     if (existingAccount) return res.status(409).json({ message: 'Tài khoản đã tồn tại' })
 
-    const newAccount = new Account({ Loai, TenHienThi, TenTaiKhoan, MatKhau })
+    const newAccount = new Account({
+      Loai,
+      TenHienThi,
+      TenTaiKhoan,
+      MatKhau,
+      CCCD,
+      SDT,
+      KhoaHocDaThamGia,
+      KhoaThiThamGia
+    })
+
     await newAccount.save()
 
     res.status(201).json({ message: 'Đăng ký thành công', data: newAccount })
@@ -59,7 +78,15 @@ const updateAccount = async (req, res) => {
     const { TenTaiKhoan } = req.params
     const updateFields = {}
 
-    const allowedFields = ['TenHienThi', 'MatKhau', 'SDT', 'Loai', 'KhoaHocDaThamGia', 'KhoaThiThamGia']
+    const allowedFields = [
+      'TenHienThi',
+      'MatKhau',
+      'Loai',
+      'SDT',
+      'CCCD',
+      'KhoaHocDaThamGia',
+      'KhoaThiThamGia'
+    ]
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         updateFields[field] = req.body[field]
@@ -72,7 +99,11 @@ const updateAccount = async (req, res) => {
       { new: true, runValidators: true }
     )
 
-    // Cập nhật số lượng học/thi nếu liên quan
+    if (!updatedAccount) {
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản để cập nhật' })
+    }
+
+    // Xử lý cập nhật sĩ số
     if (updateFields.KhoaHocDaThamGia || updateFields.KhoaThiThamGia) {
       const {
         KhoaHocDaThamGia = [],
@@ -81,26 +112,25 @@ const updateAccount = async (req, res) => {
         DSKhoaThiThamGia = []
       } = req.body
 
-      const addedKHDTG = KhoaHocDaThamGia.filter(id => !DSKhoaHocDaThamGia.includes(id))
-      const removedKHDTG = DSKhoaHocDaThamGia.filter(id => !KhoaHocDaThamGia.includes(id))
+      const addedCourses = KhoaHocDaThamGia.filter(id => !DSKhoaHocDaThamGia.includes(id))
+      const removedCourses = DSKhoaHocDaThamGia.filter(id => !KhoaHocDaThamGia.includes(id))
 
-      const addedKTTG = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
-      const removedKTTG = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
+      const addedExams = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
+      const removedExams = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
 
-      const updateCoursePromises = [
-        ...addedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
-        ...removedKHDTG.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }))
-      ]
-      const updateExamPromises = [
-        ...addedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
-        ...removedKTTG.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }))
-      ]
-
-      await Promise.all([...updateCoursePromises, ...updateExamPromises])
+      await Promise.all([
+        ...addedCourses.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
+        ...removedCourses.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } })),
+        ...addedExams.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
+        ...removedExams.map(id => Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } }))
+      ])
     }
 
-    // Cập nhật ChungChiDaNhan nếu cần
-    const results = await Result.find({ IDNguoiDung: updatedAccount._id, TrangThai: 'Đã lấy' }).populate({
+    // Cập nhật chứng chỉ đã nhận (ChungChiDaNhan)
+    const results = await Result.find({
+      IDNguoiDung: updatedAccount._id,
+      TrangThai: 'Đã lấy'
+    }).populate({
       path: 'IDKyThi',
       select: 'IDChungChi'
     })
@@ -125,21 +155,15 @@ const deleteAccount = async (req, res) => {
     const account = await Account.findById(id)
     if (!account) return res.status(404).json({ message: 'Không tìm thấy tài khoản' })
 
-    const { ChungChiDaNhan = [], KhoaHocDaThamGia = [], KhoaThi = [] } = account
+    const updateCourses = account.KhoaHocDaThamGia?.map(id =>
+      Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } })
+    ) || []
 
-    const updateCertPromises = ChungChiDaNhan.map(chungChiId =>
-      Result.findOneAndDelete({ IDNguoiDung: id, IDChungChi: chungChiId })
-    )
+    const updateExams = account.KhoaThiThamGia?.map(id =>
+      Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } })
+    ) || []
 
-    const updateCoursePromises = KhoaHocDaThamGia.map(courseId =>
-      Course.findByIdAndUpdate(courseId, { $inc: { SiSoHienTai: -1 } }, { new: true })
-    )
-
-    const updateExamPromises = KhoaThi.map(examId =>
-      Exam.findByIdAndUpdate(examId, { $inc: { SiSoHienTai: -1 } }, { new: true })
-    )
-
-    await Promise.all([...updateCertPromises, ...updateCoursePromises, ...updateExamPromises])
+    await Promise.all([...updateCourses, ...updateExams])
     await Account.findByIdAndDelete(id)
 
     res.status(200).json({ message: 'Xóa tài khoản thành công' })
@@ -148,4 +172,11 @@ const deleteAccount = async (req, res) => {
   }
 }
 
-export default { register, login, getAccounts, getAccount, updateAccount, deleteAccount }
+export default {
+  register,
+  login,
+  getAccounts,
+  getAccount,
+  updateAccount,
+  deleteAccount
+}

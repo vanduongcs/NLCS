@@ -40,7 +40,7 @@ const AccountSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    minLenght: 10,
+    minLength: 10,
     maxLength: 10
   },
   KhoaHocDaThamGia: [{
@@ -51,11 +51,6 @@ const AccountSchema = new mongoose.Schema({
   KhoaThiThamGia: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Exam',
-    default: []
-  }],
-  KetQua: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Result',
     default: []
   }],
   ChungChiDaNhan: [{

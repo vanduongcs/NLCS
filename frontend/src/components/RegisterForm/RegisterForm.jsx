@@ -15,12 +15,14 @@ function LoginForm() {
   const [TenHienThi, setTenHienThi] = useState('')
   const [TenTaiKhoan, setTenTaiKhoan] = useState('')
   const [MatKhau, setMatKhau] = useState('')
+  const [CCCD, setCCCD] = useState('')
+  const [SDT, setSDT] = useState('')
   const navigate = useNavigate()
 
   const handleSubmit = async () => {
     try {
 
-      const res = await API.post('/account/dang-ky', { TenHienThi, TenTaiKhoan, MatKhau })
+      const res = await API.post('/account/dang-ky', { TenHienThi, TenTaiKhoan, MatKhau, CCCD, SDT })
       localStorage.setItem('token', res.data.token)
 
       Swal.fire({
@@ -56,7 +58,7 @@ function LoginForm() {
 
   return (
     <Box sx={{
-        height: '510px',
+        height: '680px',
         width: '500px',
         bgcolor: 'rgba(245, 246, 250, 0.9)',
         borderRadius: '8px',
@@ -70,6 +72,8 @@ function LoginForm() {
         <RegField fieldSet={ 'Tài khoản' } input1={ TenTaiKhoan } setFunction={ setTenTaiKhoan } submitFunction={ handleKeyDown } />
         <RegField fieldSet={ 'Mật Khẩu' } input1={ MatKhau } setFunction={ setMatKhau } submitFunction={ handleKeyDown } type='password'/>
         <RegField fieldSet={ 'Tên Người Dùng' } input1={ TenHienThi } setFunction={ setTenHienThi } submitFunction={ handleKeyDown } />
+        <RegField fieldSet={ 'CCCD' } input1={ CCCD } setFunction={ setCCCD } submitFunction={ handleKeyDown } />
+        <RegField fieldSet={ 'Số điện thoại' } input1={ SDT } setFunction={ setSDT } submitFunction={ handleKeyDown } />
         <RegisterButton onClick={handleSubmit} content={'Đăng ký'}/>
         <GTLButton onClick={goToLog} content={'Đến trang đăng nhập'} />
       </Box>

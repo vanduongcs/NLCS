@@ -33,13 +33,15 @@ function QLChungChi() {
   const [LePhiThi, SetLePhiThi] = useState('')
   const [HocPhi, SetHocPhi] = useState('')     
   const [ThoiHan, SetThoiHan] = useState('')
+  const [DiemToiThieu, SetDiemToiThieu] = useState('')
 
   const formStates = {
     TenChungChi, SetTenChungChi,
     Loai, SetLoai,
     LePhiThi, SetLePhiThi,
     HocPhi, SetHocPhi,         
-    ThoiHan, SetThoiHan
+    ThoiHan, SetThoiHan,
+    DiemToiThieu, SetDiemToiThieu
   }
 
   const fetchCertificates = () => {
@@ -60,7 +62,14 @@ function QLChungChi() {
   }, [])
 
   const handleAdd = async () => {
-    const newCertificate = { TenChungChi, Loai, LePhiThi, HocPhi, ThoiHan }
+    const newCertificate = {
+      TenChungChi,
+      Loai,
+      LePhiThi: Number(LePhiThi),
+      HocPhi: Number(HocPhi),
+      ThoiHan: Number(ThoiHan),
+      DiemToiThieu: Number(DiemToiThieu)
+    }
 
     API.post(`/${routeAddress}/${funcAdd}`, newCertificate)
       .then(() => {
@@ -68,6 +77,14 @@ function QLChungChi() {
         resetForm()
       })
       .catch(() => {
+        // console.log('Gửi lên:', {
+        //   TenChungChi,
+        //   Loai,
+        //   LePhiThi: Number(LePhiThi),
+        //   HocPhi: Number(HocPhi),
+        //   ThoiHan: Number(ThoiHan),
+        //   DiemToiThieu: Number(DiemToiThieu)
+        // })
         Swal.fire({
           icon: 'warning',
           title: 'Lỗi khi thêm chứng chỉ',
@@ -100,12 +117,15 @@ function QLChungChi() {
     SetLePhiThi(row.LePhiThi)
     SetHocPhi(row.HocPhi)             
     SetThoiHan(row.ThoiHan)
+    SetDiemToiThieu(row.DiemToiThieu)
   }
 
   const handleUpdate = () => {
-    const updatedCertificate = { TenChungChi, Loai, LePhiThi,
+    const updatedCertificate = { TenChungChi, Loai, 
+      LePhiThi: Number(LePhiThi),
       HocPhi: Number(HocPhi),            
-      ThoiHan: Number(ThoiHan)
+      ThoiHan: Number(ThoiHan),
+      DiemToiThieu: Number(DiemToiThieu)
     }
 
     API.put(`/${routeAddress}/${funcUpdate}/${editingCertificate}`, updatedCertificate)
@@ -129,12 +149,14 @@ function QLChungChi() {
     SetLePhiThi('')
     SetHocPhi('')                          
     SetThoiHan('')
+    SetDiemToiThieu('')
     setEditingCertificate(null)
   }
 
   // Trường dữ liệu hiển thị trên bảng
   const columns = [
     { label: 'Tên chứng chỉ', key: 'TenChungChi' },
+    { label: 'Điểm tối thiểu', key: 'DiemToiThieu' },
     { label: 'Loại', key: 'Loai' },
     { label: 'Lệ phí thi', key: 'LePhiThi' },
     { label: 'Học phí', key: 'HocPhi' },         
@@ -148,6 +170,7 @@ function QLChungChi() {
   // Trường dữ liệu cho phép chỉnh sửa
   const columnsCanEdit = [
     { label: 'Tên chứng chỉ', key: 'TenChungChi', type: 'text' },
+    { label: 'Điểm tối thiểu', key: 'DiemToiThieu', type: 'number' },
     {
       label: 'Loại', key: 'Loai', type: 'select',
       options: [

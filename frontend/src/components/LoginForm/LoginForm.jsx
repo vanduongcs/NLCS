@@ -78,7 +78,10 @@ function LoginForm() {
 
   return (
     <Box sx={PageStyle}>
-      <img src='/banner.png' />
+      <Box
+        component="img"
+        src="/banner.png"
+      />
 
       {/* Input */}
       <LoginField

@@ -42,6 +42,9 @@ const addResult = async (req, res) => {
       ngay.setFullYear(ngay.getFullYear() + exam.IDChungChi.ThoiHan)
       NgayHetHan = ngay
     }
+    
+    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu || undefined
+    const KQ = DiemTK >= diemToiThieu ? 'Đạt' : 'Không đạt'
 
     const newResult = new Result({
       IDNguoiDung,
@@ -51,6 +54,7 @@ const addResult = async (req, res) => {
       Diem3,
       Diem4,
       DiemTK,
+      KQ,
       NgayCap,
       NgayHetHan
     })
@@ -135,6 +139,9 @@ const updateResult = async (req, res) => {
       ngayHetHan = ngay
     }
 
+    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu || undefined
+    const KQ = DiemTK >= diemToiThieu ? 'Đạt' : 'Không đạt'
+
     const updatedResult = await Result.findByIdAndUpdate(
       id,
       {
@@ -146,6 +153,7 @@ const updateResult = async (req, res) => {
           Diem3,
           Diem4,
           DiemTK,
+          KQ,
           NgayCap,
           NgayHetHan: ngayHetHan,
           TrangThai
