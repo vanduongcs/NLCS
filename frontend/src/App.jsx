@@ -9,9 +9,6 @@ import Box from '@mui/material/Box'
 import DangNhap from './pages/UserPages/DangNhap.jsx'
 import DangKy from './pages/UserPages/DangKy.jsx'
 import TrangChu from './pages/UserPages/TrangChu.jsx'
-import CCNgoaiNgu from './pages/UserPages/CCNgoaiNgu.jsx'
-import CCTinHoc from './pages/UserPages/CCTinHoc.jsx'
-import DotThi from './pages/UserPages/DotThi.jsx'
 import LichThi from './pages/UserPages/LichThi.jsx'
 import LichKhaiGiang from './pages/UserPages/LichKhaiGiang.jsx'
 import KetQua from './pages/UserPages/KetQua.jsx'
@@ -52,8 +49,6 @@ function Layout() {
           <Route path='/xac-thuc-chung-chi' element={<PrivateRoute><KTChungChi /></PrivateRoute>} />
 
           {/* Phần Admin */}
-          <Route path='/chung-chi-ngoai-ngu' element={<PrivateRoute><CCNgoaiNgu /></PrivateRoute>} />
-          <Route path='/chung-chi-tin-hoc' element={<PrivateRoute><CCTinHoc /></PrivateRoute>} />
           <Route path='/quan-ly-chung-chi' element={<PrivateRoute><RoleAuth><QLChungChi /></RoleAuth></PrivateRoute>} />
           <Route path='/quan-ly-khoa-on' element={<PrivateRoute><RoleAuth><QLKhoaOn /></RoleAuth></PrivateRoute>} />
           <Route path='/quan-ly-ky-thi' element={<PrivateRoute><RoleAuth><QLKyThi /></RoleAuth></PrivateRoute>} />

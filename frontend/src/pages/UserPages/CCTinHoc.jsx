@@ -3,7 +3,7 @@ import Box from '@mui/material/Box'
 
 function CCTinHoc() {
   return (
-    <Box>
+    <Box sx={{ minHeight: '80vh' }}>
       
     </Box>
   )

@@ -9,10 +9,10 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ComputerIcon from '@mui/icons-material/Computer';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
-import EventIcon from '@mui/icons-material/Event'
-import MyLocationIcon from '@mui/icons-material/MyLocation'
-import PrivacyTipIcon from '@mui/icons-material/PrivacyTip'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import EventIcon from '@mui/icons-material/Event';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 
 function TrangChu() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ function TrangChu() {
     <Box
       sx={{
         width: '100%',
-        bgcolor: '#f5f5f5',
+        bgcolor: (theme) => theme.palette.background.default, // Sử dụng màu nền từ theme.palette.background.paper
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -31,7 +31,7 @@ function TrangChu() {
     >
       <Box
         sx={{
-          bgcolor: 'white',
+          bgcolor: (theme) => theme.palette.background.paper,
           width: '100%',
           maxWidth: '1500px',
           height: '400px',
@@ -40,11 +40,11 @@ function TrangChu() {
           justifyContent: 'space-between',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           borderRadius: '8px',
-          p: 3,
+          p: 2,
         }}
       >
-        <Box sx={{ width: '50%' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#003366' }}>
+        <Box sx={{ width: '50%', ml: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: (theme) => theme.palette.info.dark }}>
             Trung tâm ngoại ngữ - tin học
           </Typography>
           <Typography sx={{ mt: 2 }}>
@@ -56,32 +56,6 @@ function TrangChu() {
           <Typography sx={{ mt: 1 }}>
             Nền tảng trực tuyến, tài liệu bổ sung, giảng viên chuyên nghiệp hỗ trợ học viên 24/7.
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{
-              m: 3,
-              padding: '10px 20px',
-              fontWeight: 'bold',
-              borderRadius: '5px',
-            }}
-            onClick={() => navigate('/lich-thi')}
-          >
-            Xem lịch thi
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{
-              m: 3,
-              padding: '10px 20px',
-              fontWeight: 'bold',
-              borderRadius: '5px',
-            }}
-            onClick={() => navigate('/lich-khai-giang')}
-          >
-            Xem lịch khai giảng
-          </Button>
         </Box>
 
         <Box sx={{ width: '40%' }}>
@@ -117,19 +91,6 @@ function TrangChu() {
             mb: 4, // Khoảng cách giữa các hàng
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <IconButton
-              onClick={() => navigate('/chung-chi-ngoai-ngu')}
-              sx={{
-                display: 'block',
-                textAlign: 'center',
-                cursor: 'pointer', // Chỉ giữ lại hiệu ứng con trỏ
-              }}
-            >
-              <LanguageIcon sx={{ fontSize: 128, color: (theme) => theme.palette.info.main }} />
-            </IconButton>
-            <Typography variant="h6" sx={{ textAlign: 'center' }}>Chứng chỉ ngoại ngữ</Typography>
-          </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton
@@ -169,19 +130,6 @@ function TrangChu() {
             width: '100%',
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <IconButton
-            onClick={() => navigate('/chung-chi-tin-hoc')}
-              sx={{
-                display: 'block',
-                textAlign: 'center',
-                cursor: 'pointer', // Chỉ giữ lại hiệu ứng con trỏ
-              }}
-            >
-              <ComputerIcon sx={{ fontSize: 128, color: (theme) => theme.palette.info.main }} />
-            </IconButton>
-            <Typography variant="h6" sx={{ textAlign: 'center' }}>Chứng chỉ tin học</Typography>
-          </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <IconButton

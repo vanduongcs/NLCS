@@ -48,7 +48,7 @@ const AccountSchema = new mongoose.Schema({
     ref: 'Course',
     default: []
   }],
-  KhoaThiThamGia: [{
+  KyThiDaThamGia: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Exam',
     default: []

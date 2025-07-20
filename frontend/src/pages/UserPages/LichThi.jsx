@@ -54,11 +54,11 @@ function LichThi() {
   }
 
   const isRegistered = (examId) =>
-    user?.KhoaThiThamGia?.includes(examId)
+    user?.KyThiDaThamGia?.includes(examId)
 
   const handleDangKyOrHuy = async (exam, action) => {
     if (!user) return
-    const oldList = user.KhoaThiThamGia || []
+    const oldList = user.KyThiDaThamGia || []
     const newList = action === 'add'
       ? [...oldList, exam._id]
       : oldList.filter(id => id !== exam._id)
@@ -72,8 +72,8 @@ function LichThi() {
           SDT: user.SDT,
           Loai: user.Loai,
           KhoaHocDaThamGia: user.KhoaHocDaThamGia,
-          DSKhoaThiThamGia: oldList,
-          KhoaThiThamGia: newList
+          DSKyThiDaThamGia: oldList,
+          KyThiDaThamGia: newList
         },
         config
       )

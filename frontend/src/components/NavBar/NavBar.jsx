@@ -79,7 +79,6 @@ function NavBar() {
           {!isAdmin && (
             <Box sx={{ display: { xs: 'none', sm: 'none', md: 'none', lg: 'flex' }, alignItems: 'center', gap: 2, ml: 2 }}>
               <NavButton content='Trang Chủ' path='/trang-chu' />
-              <NavButton content='Thông Tin' children1='Ngoại ngữ' children2='Tin học' childrenPath1='/chung-chi-ngoai-ngu' childrenPath2='/chung-chi-tin-hoc' />
               <NavButton content='Lịch dự kiến' children1='Lịch khai giảng' children2='Lịch thi' childrenPath1='/lich-khai-giang' childrenPath2='/lich-thi' />
               <NavButton content='Kết Quả' path='/ket-qua' />
               <NavButton content='Xác Thực' path='/xac-thuc-chung-chi' />

@@ -30,7 +30,7 @@ function QLNguoiDung() {
   const [SDT, SetSDT] = useState('')
   const [MatKhau, SetMatKhau] = useState('')
   const [KhoaHocDaThamGia, SetKhoaHocDaThamGia] = useState([])
-  const [KhoaThiThamGia, SetKhoaThiThamGia] = useState([])
+  const [KyThiDaThamGia, SetKyThiDaThamGia] = useState([])
 
   const [oldGetExams, setOldGetExams] = useState([])
   const [oldGetCourses, setOldGetCourses] = useState([])
@@ -41,7 +41,7 @@ function QLNguoiDung() {
     Loai, SetLoai,
     MatKhau, SetMatKhau,
     KhoaHocDaThamGia, SetKhoaHocDaThamGia,
-    KhoaThiThamGia, SetKhoaThiThamGia,
+    KyThiDaThamGia, SetKyThiDaThamGia,
     CCCD, SetCCCD,
     SDT, SetSDT
   }
@@ -78,8 +78,8 @@ function QLNguoiDung() {
     SetMatKhau(row.MatKhau)
     SetLoai(row.Loai)
     SetKhoaHocDaThamGia(row.KhoaHocDaThamGia || [])
-    SetKhoaThiThamGia(row.KhoaThiThamGia || [])
-    setOldGetExams(row.KhoaThiThamGia || [])
+    SetKyThiDaThamGia(row.KyThiDaThamGia || [])
+    setOldGetExams(row.KyThiDaThamGia || [])
     setOldGetCourses(row.KhoaHocDaThamGia || [])
     setEditingAccount({ _id: row._id, TenTaiKhoan: row.TenTaiKhoan })
   }
@@ -100,9 +100,9 @@ function QLNguoiDung() {
       }
     },
     {
-      label: 'Kỳ thi đã tham gia', key: 'KhoaThiThamGia',
+      label: 'Kỳ thi đã tham gia', key: 'KyThiDaThamGia',
       render: (value, row) => {
-        const names = row.KhoaThiThamGia?.map(id => {
+        const names = row.KyThiDaThamGia?.map(id => {
           const exam = exams.find(e => String(e._id) === String(id))
           return exam?.TenKyThi
         }) || []
@@ -154,7 +154,7 @@ function QLNguoiDung() {
     },
     {
       label: 'Kỳ thi đã tham gia',
-      key: 'KhoaThiThamGia',
+      key: 'KyThiDaThamGia',
       type: 'select',
       multiple: true,
       options: exams.map(e => ({ value: e._id, label: e.TenKyThi }))
@@ -164,7 +164,7 @@ function QLNguoiDung() {
   const handleAdd = async () => {
     const newAccount = {
       TenHienThi, TenTaiKhoan, MatKhau, Loai,
-      KhoaHocDaThamGia, KhoaThiThamGia,
+      KhoaHocDaThamGia, KyThiDaThamGia,
       CCCD, SDT
     }
 
@@ -186,9 +186,9 @@ function QLNguoiDung() {
   const handleUpdate = async () => {
     const updatedAccount = {
       TenHienThi, TenTaiKhoan, MatKhau, Loai,
-      KhoaHocDaThamGia, KhoaThiThamGia,
+      KhoaHocDaThamGia, KyThiDaThamGia,
       DSKhoaHocDaThamGia: oldGetCourses,
-      DSKhoaThiThamGia: oldGetExams
+      DSKyThiDaThamGia: oldGetExams
     }
 
     await API.put(`/${routeAddress}/${funcUpdate}/${editingAccount.TenTaiKhoan}`, updatedAccount)
@@ -230,7 +230,7 @@ function QLNguoiDung() {
     SetLoai('')
     SetMatKhau('')
     SetKhoaHocDaThamGia([])
-    SetKhoaThiThamGia([])
+    SetKyThiDaThamGia([])
     setEditingAccount(null)
     setOldGetCourses([])
     setOldGetExams([])

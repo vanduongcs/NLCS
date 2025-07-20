@@ -51,7 +51,7 @@ function KTChungChi() {
   }
 
   return (
-    <Box sx={{ px: 3, py: 4 }}>
+    <Box sx={{ px: 3, py: 4, minHeight: '80vh' }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">Kiểm tra chứng chỉ</Typography>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>

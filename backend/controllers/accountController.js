@@ -14,7 +14,7 @@ const register = async (req, res) => {
       CCCD,
       SDT,
       KhoaHocDaThamGia = [],
-      KhoaThiThamGia = []
+      KyThiDaThamGia = []
     } = req.body
 
     const existingAccount = await Account.findOne({ TenTaiKhoan })
@@ -28,7 +28,7 @@ const register = async (req, res) => {
       CCCD,
       SDT,
       KhoaHocDaThamGia,
-      KhoaThiThamGia
+      KyThiDaThamGia
     })
 
     await newAccount.save()
@@ -85,7 +85,7 @@ const updateAccount = async (req, res) => {
       'SDT',
       'CCCD',
       'KhoaHocDaThamGia',
-      'KhoaThiThamGia'
+      'KyThiDaThamGia'
     ]
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -104,19 +104,19 @@ const updateAccount = async (req, res) => {
     }
 
     // Xử lý cập nhật sĩ số
-    if (updateFields.KhoaHocDaThamGia || updateFields.KhoaThiThamGia) {
+    if (updateFields.KhoaHocDaThamGia || updateFields.KyThiDaThamGia) {
       const {
         KhoaHocDaThamGia = [],
-        KhoaThiThamGia = [],
+        KyThiDaThamGia = [],
         DSKhoaHocDaThamGia = [],
-        DSKhoaThiThamGia = []
+        DSKyThiDaThamGia = []
       } = req.body
 
       const addedCourses = KhoaHocDaThamGia.filter(id => !DSKhoaHocDaThamGia.includes(id))
       const removedCourses = DSKhoaHocDaThamGia.filter(id => !KhoaHocDaThamGia.includes(id))
 
-      const addedExams = KhoaThiThamGia.filter(id => !DSKhoaThiThamGia.includes(id))
-      const removedExams = DSKhoaThiThamGia.filter(id => !KhoaThiThamGia.includes(id))
+      const addedExams = KyThiDaThamGia.filter(id => !DSKyThiDaThamGia.includes(id))
+      const removedExams = DSKyThiDaThamGia.filter(id => !KyThiDaThamGia.includes(id))
 
       await Promise.all([
         ...addedCourses.map(id => Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: 1 } })),
@@ -159,7 +159,7 @@ const deleteAccount = async (req, res) => {
       Course.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } })
     ) || []
 
-    const updateExams = account.KhoaThiThamGia?.map(id =>
+    const updateExams = account.KyThiDaThamGia?.map(id =>
       Exam.findByIdAndUpdate(id, { $inc: { SiSoHienTai: -1 } })
     ) || []
 

@@ -72,7 +72,7 @@ function KetQua() {
   }
 
   return (
-    <Box sx={{ px: 3, py: 4 }}>
+    <Box sx={{ px: 3, py: 4, minHeight: '80vh' }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
         Tra cứu kết quả thi
       </Typography>

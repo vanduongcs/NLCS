@@ -14,8 +14,10 @@ const addResult = async (req, res) => {
       NgayCap
     } = req.body
 
+    // Populate IDChungChi để đảm bảo có đầy đủ thông tin
     const account = await Account.findById(IDNguoiDung)
-    const exam = await Exam.findById(IDKyThi)
+    const exam = await Exam.findById(IDKyThi).populate('IDChungChi')
+    
     if (!account || !exam) {
       return res.status(404).json({ message: 'Không tìm thấy tài khoản hoặc kỳ thi' })
     }
@@ -42,9 +44,12 @@ const addResult = async (req, res) => {
       ngay.setFullYear(ngay.getFullYear() + exam.IDChungChi.ThoiHan)
       NgayHetHan = ngay
     }
-    
-    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu || undefined
+
+    // Fix: Xử lý DiemToiThieu một cách nhất quán
+    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu ?? 0
     const KQ = DiemTK >= diemToiThieu ? 'Đạt' : 'Không đạt'
+
+    console.log('ADD - DiemTK:', DiemTK, 'DiemToiThieu:', diemToiThieu, 'KQ:', KQ)
 
     const newResult = new Result({
       IDNguoiDung,
@@ -60,6 +65,14 @@ const addResult = async (req, res) => {
     })
 
     await newResult.save()
+
+    // Cập nhật KyThiDaThamGia cho account
+    const examId = String(IDKyThi)
+    const examExists = account.KyThiDaThamGia.map(String).includes(examId)
+    if (!examExists) {
+      account.KyThiDaThamGia.push(examId)
+      await account.save()
+    }
 
     res.status(201).json({
       message: 'Thêm kết quả thành công',
@@ -108,10 +121,20 @@ const updateResult = async (req, res) => {
       TrangThai
     } = req.body
 
-    const [account, exam] = await Promise.all([
+    // Lấy thông tin result cũ để so sánh
+    const oldResult = await Result.findById(id)
+    if (!oldResult) {
+      return res.status(404).json({ message: 'Không tìm thấy kết quả để cập nhật' })
+    }
+
+    const [account, exam, oldAccount] = await Promise.all([
       Account.findById(IDNguoiDung),
-      Exam.findById(IDKyThi).populate('IDChungChi')
+      Exam.findById(IDKyThi).populate('IDChungChi'),
+      // Lấy account cũ nếu IDNguoiDung thay đổi
+      oldResult.IDNguoiDung.toString() !== IDNguoiDung ? 
+        Account.findById(oldResult.IDNguoiDung) : null
     ])
+    
     if (!account || !exam) {
       return res.status(404).json({ message: 'Không tìm thấy tài khoản hoặc kỳ thi' })
     }
@@ -139,8 +162,11 @@ const updateResult = async (req, res) => {
       ngayHetHan = ngay
     }
 
-    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu || undefined
+    // Fix: Xử lý DiemToiThieu một cách nhất quán
+    const diemToiThieu = exam?.IDChungChi?.DiemToiThieu ?? 0
     const KQ = DiemTK >= diemToiThieu ? 'Đạt' : 'Không đạt'
+
+    console.log('UPDATE - DiemTK:', DiemTK, 'DiemToiThieu:', diemToiThieu, 'KQ:', KQ)
 
     const updatedResult = await Result.findByIdAndUpdate(
       id,
@@ -162,6 +188,36 @@ const updateResult = async (req, res) => {
       { new: true, runValidators: true }
     )
 
+    // Cập nhật KyThiDaThamGia khi thay đổi IDKyThi hoặc IDNguoiDung
+    const oldExamId = String(oldResult.IDKyThi)
+    const newExamId = String(IDKyThi)
+    const oldUserId = String(oldResult.IDNguoiDung)
+    const newUserId = String(IDNguoiDung)
+
+    // Nếu thay đổi kỳ thi hoặc người dùng
+    if (oldExamId !== newExamId || oldUserId !== newUserId) {
+      // Xóa kỳ thi cũ khỏi account cũ
+      if (oldAccount) {
+        // Trường hợp đổi user
+        oldAccount.KyThiDaThamGia = oldAccount.KyThiDaThamGia.filter(
+          examId => String(examId) !== oldExamId
+        )
+        await oldAccount.save()
+      } else if (oldUserId === newUserId) {
+        // Trường hợp cùng user nhưng đổi kỳ thi
+        account.KyThiDaThamGia = account.KyThiDaThamGia.filter(
+          examId => String(examId) !== oldExamId
+        )
+      }
+
+      // Thêm kỳ thi mới vào account mới
+      const examExists = account.KyThiDaThamGia.map(String).includes(newExamId)
+      if (!examExists) {
+        account.KyThiDaThamGia.push(newExamId)
+      }
+    }
+
+    // Cập nhật ChungChiDaNhan
     const certId = String(exam.IDChungChi?._id)
     if (certId) {
       const exists = account.ChungChiDaNhan.map(String).includes(certId)
@@ -170,8 +226,24 @@ const updateResult = async (req, res) => {
       } else if (TrangThai === 'Chưa lấy' && exists) {
         account.ChungChiDaNhan = account.ChungChiDaNhan.filter(id => String(id) !== certId)
       }
-      await account.save()
     }
+
+    // Xử lý chứng chỉ cũ nếu thay đổi user hoặc kỳ thi
+    if (oldUserId !== newUserId || oldExamId !== newExamId) {
+      const oldExam = await Exam.findById(oldExamId).populate('IDChungChi')
+      const oldCertId = String(oldExam?.IDChungChi?._id)
+      
+      if (oldCertId && oldResult.TrangThai === 'Đã lấy') {
+        // Xóa chứng chỉ cũ khỏi account cũ
+        const targetAccount = oldAccount || account
+        targetAccount.ChungChiDaNhan = targetAccount.ChungChiDaNhan.filter(
+          id => String(id) !== oldCertId
+        )
+        if (oldAccount) await oldAccount.save()
+      }
+    }
+
+    await account.save()
 
     res.status(200).json(updatedResult)
   } catch (error) {
@@ -188,13 +260,34 @@ const deleteResult = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy kết quả để xóa' })
     }
 
-    const exam = await Exam.findById(result.IDKyThi)
+    const [account, exam] = await Promise.all([
+      Account.findById(result.IDNguoiDung),
+      Exam.findById(result.IDKyThi).populate('IDChungChi')
+    ])
 
-    if (result.TrangThai === 'Đã lấy' && exam?.IDChungChi) {
-      await Account.findByIdAndUpdate(
-        result.IDNguoiDung,
-        { $pull: { ChungChiDaNhan: exam.IDChungChi } }
+    // Xóa chứng chỉ khỏi ChungChiDaNhan nếu đã lấy
+    if (result.TrangThai === 'Đã lấy' && exam?.IDChungChi && account) {
+      account.ChungChiDaNhan = account.ChungChiDaNhan.filter(
+        certId => String(certId) !== String(exam.IDChungChi._id)
       )
+    }
+
+    // Kiểm tra xem có result khác của cùng user và cùng kỳ thi không
+    const otherResults = await Result.find({
+      IDNguoiDung: result.IDNguoiDung,
+      IDKyThi: result.IDKyThi,
+      _id: { $ne: id }
+    })
+
+    // Nếu không có result khác cho kỳ thi này, xóa khỏi KyThiDaThamGia
+    if (otherResults.length === 0 && account) {
+      account.KyThiDaThamGia = account.KyThiDaThamGia.filter(
+        examId => String(examId) !== String(result.IDKyThi)
+      )
+    }
+
+    if (account) {
+      await account.save()
     }
 
     await Result.findByIdAndDelete(id)
