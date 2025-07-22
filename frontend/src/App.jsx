@@ -8,11 +8,11 @@ import Box from '@mui/material/Box'
 // Route
 import DangNhap from './pages/UserPages/DangNhap.jsx'
 import DangKy from './pages/UserPages/DangKy.jsx'
-import TrangChu from './pages/UserPages/TrangChu.jsx'
-import LichThi from './pages/UserPages/LichThi.jsx'
-import LichKhaiGiang from './pages/UserPages/LichKhaiGiang.jsx'
+import TrangChu from './pages/UserPages/TrangChu/TrangChu.jsx'
+import LichThi from './pages/UserPages/LichThi/LichThi.jsx'
+import LichKhaiGiang from './pages/UserPages/LichKhaiGiang/LichKhaiGiang.jsx'
 import KetQua from './pages/UserPages/KetQua.jsx'
-import KTChungChi from './pages/UserPages/KTChungChi.jsx'
+import KTChungChi from './pages/UserPages/KTChungChi/KTChungChi.jsx'
 
 // Admin zone
 import QLChungChi from './pages/adminPages/QLChungChi.jsx'

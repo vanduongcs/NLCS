@@ -1,37 +1,28 @@
-import { useState, useEffect } from 'react'
-import Swal from 'sweetalert2'
-
-// Custome
-import API from '../../api.jsx'
-import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
-import ExamForm from '../../components/Form/ExamForm.jsx'
+import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import API from '../../api.jsx';
+import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx';
+import ExamForm from '../../components/Form/ExamForm.jsx';
 
 function QLKyThi() {
+  // Constants
+  const routeAddress = 'exam';
+  const pageContent = 'kỳ thi';
+  const funcAdd = 'them-dot-thi';
+  const funcFindAll = 'tat-ca-dot-thi';
+  const funcUpdate = 'cap-nhat-dot-thi';
+  const funcDelete = 'xoa-dot-thi';
 
-  // Hằng lưu nội dung, đường dẫn hàm xử lý
-  const routeAddress = 'exam'
-  const pageContent = 'kỳ thi'
-  const funcAdd = 'them-dot-thi'
-  const funcFindAll = 'tat-ca-dot-thi'
-  const funcUpdate = 'cap-nhat-dot-thi'
-  const funcDelete = 'xoa-dot-thi'
+  // State
+  const [EditingExam, SetEditingExam] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+  const [Exams, SetExams] = useState([]);
 
-  // Định nghĩa form truyền xuống pageComponent
-  const FormName = ExamForm
-
-  // Lưu trữ _id của bản ghi cần chỉnh sửa
-  const [EditingExam, SetEditingExam] = useState(null)
-
-  // Khai báo các biến lưu trữ giá tị của các model: cert, exam
-  const [certificates, setCertificates] = useState([])
-  const [Exams, SetExams] = useState([])
-
-  // Các thuộc tính cho phép chỉnh sửa
-  const [IDChungChi, SetIDChungChi] = useState('')
-  const [NgayThi, SetNgayThi] = useState('')
-  const [Buoi, SetBuoi] = useState('')
-  const [SiSoToiDa, SetSiSoToiDa] = useState('')
-  const [SiSoHienTai, SetSiSoHienTai] = useState('')
+  const [IDChungChi, SetIDChungChi] = useState('');
+  const [NgayThi, SetNgayThi] = useState('');
+  const [Buoi, SetBuoi] = useState('');
+  const [SiSoToiDa, SetSiSoToiDa] = useState('');
+  const [SiSoHienTai, SetSiSoHienTai] = useState('');
 
   const formStates = {
     IDChungChi, SetIDChungChi,
@@ -39,145 +30,122 @@ function QLKyThi() {
     Buoi, SetBuoi,
     SiSoToiDa, SetSiSoToiDa,
     SiSoHienTai
-  }
+  };
 
-  const fetchCertificates = async () => {
-    await API.get('/certificate/tat-ca-chung-chi')
-      .then(res => setCertificates(res.data))
-      .catch(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Không thể tải danh sách chứng chỉ',
-          confirmButtonText: 'Đóng',
-          confirmButtonColor: '#1976d2'
-        })
-      })
-  }
+  // Utility functions
+  const showError = (title) => {
+    Swal.fire({
+      icon: 'warning',
+      title,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#1976d2'
+    });
+  };
 
-  const fetchExams = async () => {
-    await API.get(`/${routeAddress}/${funcFindAll}`)
-      .then(res => SetExams(res.data))
-      .catch(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: `Không thể tải danh sách ${ pageContent }`,
-          confirmButtonText: 'Đóng',
-          confirmButtonColor: '#1976d2'
-        })
-      })
-  }
-
-  useEffect(() => {
-    fetchCertificates()
-    fetchExams()
-  }, [])
-
-  const handleDelete = async (id) => {
-      await API.delete(`/${routeAddress}/${funcDelete}/${id}`)
-      .then(res => {
-        fetchExams()
-      })
-      .catch(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: `Lỗi khi chỉnh sửa ${ pageContent }`,
-          confirmButtonText: 'Đóng',
-          confirmButtonColor: '#1976d2'
-        })
-      })
-  }
-
-  const handleEdit = (row) => {
-    SetIDChungChi(row.IDChungChi?._id || '')
-    SetNgayThi(row.NgayThi ? new Date(row.NgayThi).toISOString().slice(0, 10) : '')
-    SetBuoi(row.Buoi)
-    SetSiSoToiDa(row.SiSoToiDa?.toString() || '')
-    SetEditingExam(row._id)
-  }
-
-  const handleAdd = () => {
-    const newExam = {
-      IDChungChi,
-      NgayThi: new Date(NgayThi),
-      Buoi,
-      SiSoToiDa: SiSoToiDa ? Number(SiSoToiDa) : undefined
-    }
-
-    API.post(`/${routeAddress}/${funcAdd}`, newExam)
-      .then(() => {
-        fetchExams()
-        resetForm()
-      })
-      .catch(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: `Lỗi khi thêm ${ pageContent }`,
-          confirmButtonText: 'Đóng',
-          confirmButtonColor: '#1976d2'
-        })
-      })
-  }
-
-  const handleUpdate = () => {
-    const updated = {
-      IDChungChi,
-      NgayThi: new Date(NgayThi),
-      Buoi,
-      SiSoToiDa: Number(SiSoToiDa) || undefined
-    }
-
-    API.put(`/${routeAddress}/${funcUpdate}/${EditingExam}`, updated)
-      .then(() => {
-        fetchExams()
-        resetForm()
-      })
-      .catch(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: `Lỗi khi chỉnh sửa ${ pageContent }`,
-          confirmButtonText: 'Đóng',
-          confirmButtonColor: '#1976d2'
-        })
-      })
-  }
+  const createExamData = () => ({
+    IDChungChi,
+    NgayThi: new Date(NgayThi),
+    Buoi,
+    SiSoToiDa: SiSoToiDa ? Number(SiSoToiDa) : undefined
+  });
 
   const resetForm = () => {
-    SetIDChungChi('')
-    SetNgayThi('')
-    SetBuoi('')
-    SetSiSoToiDa('')
-    SetEditingExam(null)
-  }
+    SetIDChungChi('');
+    SetNgayThi('');
+    SetBuoi('');
+    SetSiSoToiDa('');
+    SetEditingExam(null);
+  };
 
-  // Trường dữ liệu hiển thị trên bảng
+  const getCertificateInfo = (row, field) => {
+    const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi;
+    const cert = certificates.find(c => String(c._id) === String(certId));
+    return cert ? cert[field] : '';
+  };
+
+  // API functions
+  const fetchData = async () => {
+    try {
+      const [certificatesRes, examsRes] = await Promise.all([
+        API.get('/certificate/tat-ca-chung-chi'),
+        API.get(`/${routeAddress}/${funcFindAll}`)
+      ]);
+
+      setCertificates(certificatesRes.data);
+      SetExams(examsRes.data);
+    } catch (error) {
+      showError('Lỗi khi tải dữ liệu');
+    }
+  };
+
+  const fetchExams = async () => {
+    try {
+      const res = await API.get(`/${routeAddress}/${funcFindAll}`);
+      SetExams(res.data);
+    } catch (error) {
+      showError(`Không thể tải danh sách ${pageContent}`);
+    }
+  };
+
+  // Event handlers
+  const handleAdd = async () => {
+    try {
+      await API.post(`/${routeAddress}/${funcAdd}`, createExamData());
+      await fetchExams();
+      resetForm();
+    } catch (error) {
+      showError(`Lỗi khi thêm ${pageContent}`);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
+      await fetchExams();
+    } catch (error) {
+      showError(`Lỗi khi xóa ${pageContent}`);
+    }
+  };
+
+  const handleEdit = (row) => {
+    SetIDChungChi(row.IDChungChi?._id || '');
+    SetNgayThi(row.NgayThi ? new Date(row.NgayThi).toISOString().slice(0, 10) : '');
+    SetBuoi(row.Buoi);
+    SetSiSoToiDa(row.SiSoToiDa?.toString() || '');
+    SetEditingExam(row._id);
+  };
+
+  const handleUpdate = async () => {
+    try {
+      await API.put(`/${routeAddress}/${funcUpdate}/${EditingExam}`, createExamData());
+      await fetchExams();
+      resetForm();
+    } catch (error) {
+      showError(`Lỗi khi chỉnh sửa ${pageContent}`);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Table configuration
   const columns = [
     { label: 'Tên kỳ thi', key: 'TenKyThi' },
     {
       label: 'Chứng chỉ',
       key: 'IDChungChi',
-      render: (value, row) => {
-        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
-        const cert = certificates.find(c => String(c._id) === String(certId))
-        return cert ? cert.TenChungChi : ''
-      }
+      render: (value, row) => getCertificateInfo(row, 'TenChungChi')
     },
     {
       label: 'Loại',
       key: 'IDChungChi',
-      render: (value, row) => {
-        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
-        const cert = certificates.find(c => String(c._id) === String(certId))
-        return cert ? cert.Loai : ''
-      }
+      render: (value, row) => getCertificateInfo(row, 'Loai')
     },
     {
       label: 'Lệ phí thi',
       key: 'IDChungChi',
-      render: (value, row) => {
-        const certId = typeof row.IDChungChi === 'object' ? row.IDChungChi._id : row.IDChungChi
-        const cert = certificates.find(c => String(c._id) === String(certId))
-        return cert ? cert.LePhiThi : ''
-      }
+      render: (value, row) => getCertificateInfo(row, 'LePhiThi')
     },
     { label: 'Ngày thi', key: 'NgayThi', isDate: true },
     { label: 'Buổi', key: 'Buoi' },
@@ -187,12 +155,13 @@ function QLKyThi() {
     { label: 'Lần sửa cuối', key: 'updatedAt', isDate: true },
     { label: 'Sửa', key: 'editButton', isAction: 'edit' },
     { label: 'Xóa', key: 'deleteButton', isAction: 'delete' }
-  ]
+  ];
 
-  // Trường dữ liệu cho phép chỉnh sửa
   const columnsCanEdit = [
     {
-      label: 'Chọn chứng chỉ', key: 'IDChungChi', type: 'select',
+      label: 'Chọn chứng chỉ', 
+      key: 'IDChungChi', 
+      type: 'select',
       options: certificates.map(cert => ({
         label: cert.TenChungChi,
         value: cert._id
@@ -200,14 +169,16 @@ function QLKyThi() {
     },
     { label: 'Ngày thi', key: 'NgayThi', type: 'date' },
     {
-      label: 'Buổi', key: 'Buoi', type: 'select',
+      label: 'Buổi', 
+      key: 'Buoi', 
+      type: 'select',
       options: [
         { value: 'Sáng', label: 'Sáng' },
         { value: 'Chiều', label: 'Chiều' }
       ]
     },
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' }
-  ]
+  ];
 
   return (
     <PageComponent
@@ -222,9 +193,9 @@ function QLKyThi() {
       handleUpdate={handleUpdate}
       handleDelete={handleDelete}
       resetForm={resetForm}
-      FormName={FormName}
+      FormName={ExamForm}
     />
-  )
+  );
 }
 
-export default QLKyThi
+export default QLKyThi;
