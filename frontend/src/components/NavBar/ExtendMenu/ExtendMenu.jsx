@@ -28,8 +28,6 @@ function ExtendMenu({ isAdmin }) {
       { text: 'Trang chủ', path: '/trang-chu' },
       { text: 'Đợt thi', path: '/dot-thi' },
       { text: 'Lịch khai giảng', path: '/lich-khai-giang' },
-      { text: 'Đăng ký khóa ôn', path: '/dang-ky-khoa-on' },
-      { text: 'Đăng ký thi', path: '/dang-ky-thi' },
       { text: 'Kết quả', path: '/ket-qua' },
       { text: 'Xác thực chứng chỉ', path: '/xac-thuc-chung-chi' },
       { text: 'Chứng chỉ ngoại ngữ', path: '/chung-chi-ngoai-ngu' },

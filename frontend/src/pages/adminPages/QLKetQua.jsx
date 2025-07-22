@@ -99,19 +99,20 @@ function QLKetQua() {
   };
 
   // Event handlers
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const exam = exams.find(e => e._id === IDKyThi);
     if (!IDNguoiDung || !exam) {
       showAlert('Không tìm thấy người dùng hoặc kỳ thi');
       return;
     }
 
-    API.post(`/${routeAddress}/${funcAdd}`, createResultData())
-      .then(() => {
-        fetchResults();
-        resetForm();
-      })
-      .catch(() => showAlert('Lỗi khi thêm kết quả'));
+    try {
+      await API.post(`/${routeAddress}/${funcAdd}`, createResultData());
+      await fetchResults();
+      resetForm();
+    } catch (error) {
+      showAlert(error.response?.data?.message || 'Lỗi khi thêm kết quả');
+    }
   };
 
   const handleDelete = async (id) => {

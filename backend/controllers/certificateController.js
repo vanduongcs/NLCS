@@ -53,24 +53,26 @@ const updateCertificate = async (req, res) => {
 const deleteCertificate = async (req, res) => {
   try {
     const { id } = req.params;
-    const certificate = await Certificate.findById(id);
 
-    const hasDependencies = await Promise.all([
-      Result.exists({ IDChungChi: id }),
-      Course.exists({ TenChungChi: certificate.TenChungChi }),
-      Exam.exists({ TenChungChi: certificate.TenChungChi })
+    // Kiểm tra xem có course hoặc exam nào sử dụng chứng chỉ này không
+    const [courseCount, examCount] = await Promise.all([
+      Course.countDocuments({ IDChungChi: id }),
+      Exam.countDocuments({ IDChungChi: id })
     ]);
 
-    if (hasDependencies.some((exists) => exists)) {
-      return res.status(400).json({
-        message: 'Không thể xóa chứng chỉ. Đang có dữ liệu liên kết với khóa học, kỳ thi hoặc kết quả.'
+    // Nếu có liên kết thì không cho xóa
+    if (courseCount > 0 || examCount > 0) {
+      return res.status(400).json({ 
+        message: 'Không thể xóa. Chứng chỉ đang được sử dụng trong khóa học hoặc kỳ thi.' 
       });
     }
 
+    // Tiến hành xóa
     await Certificate.findByIdAndDelete(id);
     res.status(200).json({ message: 'Xóa chứng chỉ thành công' });
+
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
 

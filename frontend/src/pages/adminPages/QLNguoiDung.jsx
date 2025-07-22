@@ -203,6 +203,8 @@ function QLNguoiDung() {
   // Table configuration
   const columns = [
     { label: 'Tên', key: 'TenHienThi' },
+    { label: 'Căn cước', key: 'CCCD' },
+    { label: 'Số điện thoại', key: 'SDT' },
     { label: 'Tài khoản', key: 'TenTaiKhoan' },
     { label: 'Vai trò', key: 'Loai' },
     { label: 'Mật khẩu', key: 'MatKhau' },

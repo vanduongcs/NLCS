@@ -32,16 +32,6 @@ function QLChungChi() {
     DiemToiThieu, SetDiemToiThieu
   };
 
-  // Utility functions
-  const showError = (title) => {
-    Swal.fire({
-      icon: 'warning',
-      title,
-      confirmButtonText: 'Đóng',
-      confirmButtonColor: '#1976d2'
-    });
-  };
-
   const createCertificateData = () => ({
     TenChungChi,
     Loai,
@@ -69,18 +59,47 @@ function QLChungChi() {
   };
 
   const handleAdd = async () => {
-    API.post(`/${routeAddress}/${funcAdd}`, createCertificateData())
-      .then(() => {
-        fetchCertificates();
-        resetForm();
-      })
-      .catch(() => showError('Lỗi khi thêm chứng chỉ'));
+    try {
+      await API.post(`/${routeAddress}/${funcAdd}`, createCertificateData());
+      fetchCertificates();
+      resetForm();
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Thêm chứng chỉ thành công',
+        confirmButtonText: 'Đóng'
+      });
+    } catch (error) {
+      showError(error.response?.data?.message || 'Không thể thêm chứng chỉ');
+    }
   };
 
   const handleDelete = async (id) => {
-    API.delete(`/${routeAddress}/${funcDelete}/${id}`)
-      .then(() => fetchCertificates())
-      .catch(() => showError('Lỗi khi xóa chứng chỉ'));
+    Swal.fire({
+      title: 'Xác nhận xóa?',
+      text: 'Bạn có chắc muốn xóa chứng chỉ này?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Đồng ý',
+      cancelButtonText: 'Hủy'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
+          fetchCertificates();
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã xóa',
+            text: 'Chứng chỉ đã được xóa thành công',
+            confirmButtonText: 'Đóng'
+          });
+        } catch (error) {
+          showError(error.response?.data?.message || 'Không thể xóa chứng chỉ');
+        }
+      }
+    });
   };
 
   const handleEdit = (row) => {
@@ -93,13 +112,31 @@ function QLChungChi() {
     SetDiemToiThieu(row.DiemToiThieu);
   };
 
-  const handleUpdate = () => {
-    API.put(`/${routeAddress}/${funcUpdate}/${editingCertificate}`, createCertificateData())
-      .then(() => {
-        fetchCertificates();
-        resetForm();
-      })
-      .catch(() => showError('Lỗi khi cập nhật chứng chỉ'));
+  const handleUpdate = async () => {
+    try {
+      await API.put(`/${routeAddress}/${funcUpdate}/${editingCertificate}`, createCertificateData());
+      fetchCertificates();
+      resetForm();
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Cập nhật chứng chỉ thành công',
+        confirmButtonText: 'Đóng'
+      });
+    } catch (error) {
+      showError(error.response?.data?.message || 'Không thể cập nhật chứng chỉ');
+    }
+  };
+
+  // Hàm showError có thể được cập nhật để linh hoạt hơn
+  const showError = (message) => {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Thông báo',
+      text: message,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#1976d2'
+    });
   };
 
   useEffect(() => {

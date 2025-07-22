@@ -84,6 +84,7 @@ function KTChungChi() {
   }
 
   const PageStyle = {
+    p: 4,
     minHeight: '80vh',
     bgcolor: (theme) => theme.palette.background.default
   }
@@ -118,7 +119,7 @@ function KTChungChi() {
           onChange={(e) => SetCccd(e.target.value)} 
         />
         <TextField 
-          label="Mã kết quả (ID)" 
+          label="Mã số" 
           value={resultId} 
           onChange={(e) => SetResultId(e.target.value)} 
         />

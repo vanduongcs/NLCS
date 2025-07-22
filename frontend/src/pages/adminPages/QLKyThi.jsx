@@ -33,10 +33,11 @@ function QLKyThi() {
   };
 
   // Utility functions
-  const showError = (title) => {
+  const showError = (message) => {
     Swal.fire({
       icon: 'warning',
-      title,
+      title: 'Thông báo',
+      text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
     });
@@ -94,17 +95,37 @@ function QLKyThi() {
       await fetchExams();
       resetForm();
     } catch (error) {
-      showError(`Lỗi khi thêm ${pageContent}`);
+      showError(error.response?.data?.message || `Lỗi khi thêm ${pageContent}`);
     }
   };
 
   const handleDelete = async (id) => {
-    try {
-      await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
-      await fetchExams();
-    } catch (error) {
-      showError(`Lỗi khi xóa ${pageContent}`);
-    }
+    Swal.fire({
+      title: 'Xác nhận xóa',
+      text: `Bạn có chắc chắn muốn xóa ${pageContent} này không?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Đồng ý',
+      cancelButtonText: 'Hủy'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
+          await fetchExams();
+          Swal.fire({
+            title: 'Đã xóa!',
+            text: `${pageContent} đã được xóa thành công.`,
+            icon: 'success',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'Đóng'
+          });
+        } catch (error) {
+          showError(error.response?.data?.message || `Lỗi khi xóa ${pageContent}`);
+        }
+      }
+    });
   };
 
   const handleEdit = (row) => {
@@ -121,7 +142,7 @@ function QLKyThi() {
       await fetchExams();
       resetForm();
     } catch (error) {
-      showError(`Lỗi khi chỉnh sửa ${pageContent}`);
+      showError(error.response?.data?.message || `Lỗi khi chỉnh sửa ${pageContent}`);
     }
   };
 

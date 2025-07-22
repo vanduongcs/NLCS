@@ -31,7 +31,7 @@ function TCBanner() {
 
         <Box sx={{ width: '40%' }}>
           <img
-            src='/public/HomePageBanner.png'
+            src='/HomePageBanner.png'
             alt='Banner'
             style={{
               height: '350px',

@@ -128,8 +128,7 @@ function KetQua() {
   }
 
   const PageStyle = { 
-    px: 3, 
-    py: 4, 
+    p: 4,
     minHeight: '80vh', 
     bgcolor: (theme) => theme.palette.background.default 
   }

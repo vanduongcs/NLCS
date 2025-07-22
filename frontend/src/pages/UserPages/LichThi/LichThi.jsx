@@ -77,8 +77,7 @@ function LichThi() {
         {
           ...user,
           KyThiDaThamGia: newList
-        },
-        config
+        }
       )
       Swal.fire({
         title: action === 'add' ? 'Đăng ký thành công!' : 'Hủy đăng ký thành công!',

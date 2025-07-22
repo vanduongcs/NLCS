@@ -21,8 +21,26 @@ const addExam = async (req, res) => {
     const examDate = new Date(NgayThi).setHours(0, 0, 0, 0);
     if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.' });
 
-    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi === 'Sáng' ? 'S' : 'C'}`;
-    const newExam = new Exam({ IDChungChi, TenKyThi, NgayThi, Buoi, SiSoToiDa });
+    // Đếm số lượng kỳ thi trùng điều kiện
+    const existingExamsCount = await Exam.countDocuments({
+      IDChungChi: IDChungChi,
+      Buoi: Buoi,
+      NgayThi: {
+        $gte: new Date(examDate),
+        $lt: new Date(examDate + 24 * 60 * 60 * 1000)
+      }
+    });
+
+    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi === 'Sáng' ? 'S' : 'C'}${existingExamsCount + 1}`;
+    
+    const newExam = new Exam({ 
+      IDChungChi, 
+      TenKyThi, 
+      NgayThi, 
+      Buoi, 
+      SiSoToiDa,
+      SiSoHienTai: 0 
+    });
 
     await newExam.save();
     res.status(201).json({ message: 'Thêm đợt thi thành công', data: newExam });
@@ -53,8 +71,19 @@ const updateExam = async (req, res) => {
     const examDate = new Date(NgayThi).setHours(0, 0, 0, 0);
     if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.' });
 
+    // Đếm số lượng kỳ thi trùng điều kiện
+    const existingExamsCount = await Exam.countDocuments({
+      IDChungChi: IDChungChi,
+      Buoi: Buoi,
+      NgayThi: {
+        $gte: new Date(examDate),
+        $lt: new Date(examDate + 24 * 60 * 60 * 1000)
+      },
+      _id: { $ne: id } // Loại trừ kỳ thi hiện tại
+    });
+
     const certificate = await Certificate.findById(IDChungChi);
-    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}`;
+    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}${existingExamsCount + 1}`;
 
     const updatedExam = await Exam.findByIdAndUpdate(
       id,
@@ -74,15 +103,38 @@ const deleteExam = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await Promise.all([
-      Account.updateMany({ KhoaThi: id }, { $pull: { KhoaThi: id } }),
-      Exam.findByIdAndDelete(id)
-    ]);
+    // Kiểm tra xem đợt thi có trong KyThiDaThamGia của bất kỳ tài khoản nào không
+    const accountWithExam = await Account.findOne({ 
+      KyThiDaThamGia: { $elemMatch: { $eq: id } } 
+    });
+    
+    // Nếu có tài khoản đã tham gia kỳ thi này
+    if (accountWithExam) {
+      return res.status(400).json({ 
+        message: 'Không thể xóa. Đợt thi đã có học viên đăng ký.' 
+      });
+    }
 
-    res.status(200).json({ message: 'Xóa đợt thi thành công và cập nhật các tài khoản liên quan' });
+    // Xóa đợt thi nếu không có học viên đăng ký
+    const deletedExam = await Exam.findByIdAndDelete(id);
+
+    if (!deletedExam) {
+      return res.status(404).json({ 
+        message: 'Không tìm thấy đợt thi để xóa' 
+      });
+    }
+
+    res.status(200).json({ 
+      message: 'Xóa đợt thi thành công',
+      deletedExam 
+    });
+
   } catch (error) {
     console.error('Lỗi xóa đợt thi:', error.message);
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ 
+      message: 'Lỗi server', 
+      error: error.message 
+    });
   }
 };
 

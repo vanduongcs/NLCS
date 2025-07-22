@@ -37,10 +37,11 @@ function QLKhoaOn() {
   };
 
   // Utility functions
-  const showError = (title) => {
+  const showError = (message) => {
     Swal.fire({
       icon: 'warning',
-      title,
+      title: 'Thông báo',
+      text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
     });
@@ -63,16 +64,6 @@ function QLKhoaOn() {
     SetBuoi('');
     SetSiSoToiDa('');
     SetEditingCourse(null);
-  };
-
-  // API functions
-  const fetchCertificates = async () => {
-    try {
-      const res = await API.get('/certificate/tat-ca-chung-chi');
-      SetCertificates(res.data);
-    } catch (error) {
-      showError('Không thể tải danh sách chứng chỉ');
-    }
   };
 
   const fetchCourses = async () => {
@@ -118,21 +109,46 @@ function QLKhoaOn() {
   // Event handlers
   const handleAdd = async () => {
     try {
-      await API.post(`/${routeAddress}/${funcAdd}`, createCourseData());
+      const response = await API.post(`/${routeAddress}/${funcAdd}`, createCourseData());
       await fetchCourses();
       resetForm();
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: response.data.message || 'Thêm khóa ôn thành công',
+        confirmButtonText: 'Đóng'
+      });
     } catch (error) {
-      showError(`Lỗi khi thêm ${pageContent}`);
+      showError(error.response?.data?.message || 'Không thể thêm khóa ôn');
     }
   };
 
   const handleDelete = async (id) => {
-    try {
-      await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
-      await fetchCourses();
-    } catch (error) {
-      showError(`Lỗi khi xóa ${pageContent}`);
-    }
+    Swal.fire({
+      title: 'Xác nhận xóa?',
+      text: 'Bạn có chắc muốn xóa khóa ôn này?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Đồng ý',
+      cancelButtonText: 'Hủy'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
+          await fetchCourses();
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã xóa',
+            text: response.data.message || 'Xóa khóa ôn thành công',
+            confirmButtonText: 'Đóng'
+          });
+        } catch (error) {
+          showError(error.response?.data?.message || 'Không thể xóa khóa ôn');
+        }
+      }
+    });
   };
 
   const handleEdit = (row) => {
@@ -150,8 +166,14 @@ function QLKhoaOn() {
       await API.put(`/${routeAddress}/${funcUpdate}/${EditingCourse}`, createCourseData());
       await fetchCourses();
       resetForm();
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Cập nhật khóa ôn thành công',
+        confirmButtonText: 'Đóng'
+      });
     } catch (error) {
-      showError(`Lỗi khi chỉnh sửa ${pageContent}`);
+      showError(error.response?.data?.message || 'Không thể cập nhật khóa ôn');
     }
   };
 
