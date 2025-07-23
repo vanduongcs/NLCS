@@ -15,11 +15,11 @@ const addExam = async (req, res) => {
     const { IDChungChi, NgayThi, Buoi, SiSoToiDa } = req.body;
     const certificate = await Certificate.findById(IDChungChi);
 
-    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ' });
+    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' });
 
     const today = new Date().setHours(0, 0, 0, 0);
     const examDate = new Date(NgayThi).setHours(0, 0, 0, 0);
-    if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.' });
+    if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.', error: 'SAI_MIEN_GIA_TRI' });
 
     // Đếm số lượng kỳ thi trùng điều kiện
     const existingExamsCount = await Exam.countDocuments({
@@ -43,10 +43,9 @@ const addExam = async (req, res) => {
     });
 
     await newExam.save();
-    res.status(201).json({ message: 'Thêm đợt thi thành công', data: newExam });
+    res.status(201).json({ message: 'Thêm đợt thi thành công' });
   } catch (error) {
-    console.error('Lỗi thêm đợt thi:', error.message);
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ message: 'Lỗi khi thêm đợt thi', error: error.message });
   }
 };
 
@@ -69,7 +68,7 @@ const updateExam = async (req, res) => {
 
     const today = new Date().setHours(0, 0, 0, 0);
     const examDate = new Date(NgayThi).setHours(0, 0, 0, 0);
-    if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.' });
+    if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.', error: 'SAI_MIEN_GIA_TRI' });
 
     // Đếm số lượng kỳ thi trùng điều kiện
     const existingExamsCount = await Exam.countDocuments({
@@ -93,7 +92,6 @@ const updateExam = async (req, res) => {
 
     res.status(200).json(updatedExam);
   } catch (error) {
-    console.error('Lỗi cập nhật đợt thi:', error.message);
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
@@ -110,31 +108,20 @@ const deleteExam = async (req, res) => {
     
     // Nếu có tài khoản đã tham gia kỳ thi này
     if (accountWithExam) {
-      return res.status(400).json({ 
-        message: 'Không thể xóa. Đợt thi đã có học viên đăng ký.' 
-      });
+      return res.status(400).json({ message: 'Không thể xóa. Đợt thi đã có học viên đăng ký.', error: 'CO_RANG_BUOC' });
     }
 
     // Xóa đợt thi nếu không có học viên đăng ký
     const deletedExam = await Exam.findByIdAndDelete(id);
 
     if (!deletedExam) {
-      return res.status(404).json({ 
-        message: 'Không tìm thấy đợt thi để xóa' 
-      });
+      return res.status(404).json({ message: 'Không tìm thấy đợt thi để xóa', error: 'KHONG_TIM_THAY' })
     }
 
-    res.status(200).json({ 
-      message: 'Xóa đợt thi thành công',
-      deletedExam 
-    });
+    res.status(200).json({ message: 'Xóa đợt thi thành công' });
 
   } catch (error) {
-    console.error('Lỗi xóa đợt thi:', error.message);
-    res.status(500).json({ 
-      message: 'Lỗi server', 
-      error: error.message 
-    });
+    res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
 

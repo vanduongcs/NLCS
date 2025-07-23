@@ -12,9 +12,14 @@ const formatDate = (date) => {
 const addCourse = async (req, res) => {
   try {
     const { IDChungChi, NgayKhaiGiang, NgayKetThuc, Buoi, SiSoToiDa, LichHoc } = req.body;
+
+    if (NgayKhaiGiang > NgayKetThuc) {
+      return res.status(400).json({ message: 'Ngày khai giảng phải nhỏ hơn ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
     const certificate = await Certificate.findById(IDChungChi);
 
-    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ' });
+    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' });
 
     // Đếm số lượng khóa học trùng điều kiện
     const existingCoursesCount = await Course.countDocuments({
@@ -40,9 +45,8 @@ const addCourse = async (req, res) => {
     });
 
     await newCourse.save();
-    res.status(201).json({ message: 'Thêm khóa ôn thành công', data: newCourse });
+    res.status(201).json({ message: 'Thêm khóa ôn thành công' });
   } catch (error) {
-    console.error('Lỗi thêm khóa ôn:', error.message);
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
@@ -63,6 +67,10 @@ const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
     const { IDChungChi, NgayKhaiGiang, NgayKetThuc, Buoi, SiSoToiDa, LichHoc } = req.body;
+
+    if (NgayKhaiGiang > NgayKetThuc) {
+      return res.status(400).json({ message: 'Ngày khai giảng phải nhỏ hơn ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
+    }
 
     // Đếm số lượng khóa học trùng điều kiện
     const existingCoursesCount = await Course.countDocuments({
@@ -94,7 +102,7 @@ const updateCourse = async (req, res) => {
 
     res.status(200).json(updatedCourse);
   } catch (error) {
-    console.error('Lỗi cập nhật khóa ôn:', error.message);
+    // console.error('Lỗi cập nhật khóa ôn:', error.message);
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
@@ -108,24 +116,17 @@ const deleteCourse = async (req, res) => {
     const accountWithCourse = await Account.findOne({ KhoaHocDaThamGia: id });
     
     if (accountWithCourse) {
-      return res.status(400).json({ 
-        message: 'Không thể xóa. Khóa học đã được đăng ký bởi học viên.' 
-      });
+      return res.status(400).json({ message: 'Không thể xóa. Khóa học đã được đăng ký bởi học viên.', error: 'CO_RANG_BUOC' });
     }
 
     // Tiến hành xóa
     const deletedCourse = await Course.findByIdAndDelete(id);
 
     if (!deletedCourse) {
-      return res.status(404).json({ 
-        message: 'Không tìm thấy khóa học để xóa' 
-      });
+      return res.status(404).json({ message: 'Không tìm thấy khóa học để xóa', error: 'KHONG_TIM_THAY' })
     }
 
-    res.status(200).json({ 
-      message: 'Xóa khóa ôn thành công',
-      deletedCourse 
-    });
+    res.status(200).json({ message: 'Xóa khóa ôn thành công' });
 
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });

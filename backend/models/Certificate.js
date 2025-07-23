@@ -14,20 +14,29 @@ const CertificateSchema = new mongoose.Schema({
   },
   LePhiThi: {
     type: Number,
-    required: true
+    required: true,
+    min: 0
   },
   HocPhi: {
     type: Number,
     required: true,
+    min: 0,
     default: 0
   },
   ThoiHan: {
-    type: Number
+    type: Number,
+    min: 0
   },
   DiemToiThieu: {
     type: Number,
     required: true,
-    min: 0,
+    min: 0
+  },
+  DiemToiDa: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1
   }
 }, { timestamps: true })
 

@@ -1,23 +1,31 @@
 import Certificate from '../models/Certificate.js';
-import Result from '../models/Result.js';
 import Course from '../models/Course.js';
 import Exam from '../models/Exam.js';
 
 // Thêm chứng chỉ
 const addCertificate = async (req, res) => {
   try {
-    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu } = req.body;
+    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa } = req.body;
 
-    // Log đầu vào để kiểm tra
-    console.log('[DEBUG] Dữ liệu thêm chứng chỉ:', req.body);
+    const certCount = await Certificate.findOne({ TenChungChi: TenChungChi })
+    if (certCount) {
+      return res.status(400).json({ message: 'Chứng chỉ đã tồn tại trong hệ thống', error: 'CHUNG_CHI_DA_TON_TAI' })
+    }
 
-    const newCertificate = new Certificate({ Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu });
+    if (DiemToiThieu > DiemToiDa) {
+      return res.status(400).json({ message: 'Điểm tối thiểu không được lớn hơn điểm tối đa', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (HocPhi < 0) {
+      return res.status(400).json({ message: 'Học phí không thể âm', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    const newCertificate = new Certificate({ Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa });
     await newCertificate.save();
 
-    res.status(201).json({ message: 'Thêm chứng chỉ thành công', data: newCertificate });
+    res.status(201).json({ message: 'Thêm chứng chỉ thành công' });
   } catch (error) {
-    console.error('[ERROR] Không thể thêm chứng chỉ:', error);
-    res.status(500).json({ message: 'Lỗi server khi thêm chứng chỉ', error: error.message });
+    res.status(500).json({ message: 'Lỗi khi thêm chứng chỉ', error: error.message });
   }
 };
 
@@ -35,17 +43,75 @@ const getCertificates = async (req, res) => {
 const updateCertificate = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa } = req.body;
 
+    // Kiểm tra chứng chỉ đã tồn tại chưa
+    const existingCert = await Certificate.findOne({ 
+      TenChungChi: TenChungChi, 
+      _id: { $ne: id }
+    });
+
+    if (existingCert) {
+      return res.status(400).json({ 
+        message: 'Chứng chỉ đã tồn tại trong hệ thống',
+        error: 'CHUNG_CHI_DA_TON_TAI'
+      });
+    }
+
+    if (DiemToiThieu > DiemToiDa) {
+      return res.status(400).json({ 
+        message: 'Điểm tối thiểu không được lớn hơn điểm tối đa',
+        error: 'SAI_MIEN_GIA_TRI'
+      });
+    }
+
+    if (HocPhi < 0) {
+      return res.status(400).json({ message: 'Học phí không thể âm', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (ThoiHan < 0) {
+      return res.status(400).json({
+        message: 'Thời hạn không thể âm',
+        error: 'SAI_MIEN_GIA_TRI'
+      })
+    }
+
+    
+
+    // Tiến hành cập nhật
     const updatedCertificate = await Certificate.findByIdAndUpdate(
       id,
-      { $set: updates },
-      { new: true, runValidators: true }
+      { 
+        Loai, 
+        TenChungChi, 
+        LePhiThi, 
+        HocPhi, 
+        ThoiHan, 
+        DiemToiThieu, 
+        DiemToiDa 
+      },
+      { 
+        new: true, 
+        runValidators: true 
+      }
     );
 
-    res.status(200).json(updatedCertificate);
+    // Kiểm tra xem có tìm thấy chứng chỉ không
+    if (!updatedCertificate) {
+      return res.status(404).json({ 
+        message: 'Không tìm thấy chứng chỉ',
+        error: 'KHONG_TIM_THAY'
+      });
+    }
+
+    res.status(200).json({ message: 'Cập nhật chứng chỉ thành công' });
+
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    console.error('Lỗi khi cập nhật chứng chỉ:', error);
+    res.status(500).json({ 
+      message: 'Lỗi server khi cập nhật chứng chỉ', 
+      error: error.message 
+    });
   }
 };
 
@@ -63,7 +129,8 @@ const deleteCertificate = async (req, res) => {
     // Nếu có liên kết thì không cho xóa
     if (courseCount > 0 || examCount > 0) {
       return res.status(400).json({ 
-        message: 'Không thể xóa. Chứng chỉ đang được sử dụng trong khóa học hoặc kỳ thi.' 
+        message: 'Không thể xóa. Chứng chỉ đang được sử dụng trong khóa học hoặc kỳ thi.',
+        error: 'KHONG_THE_XOA'
       });
     }
 

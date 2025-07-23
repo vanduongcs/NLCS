@@ -18,7 +18,7 @@ const register = async (req, res) => {
     // Cập nhật sĩ số khi đăng ký mới (tất cả là added)
     await updateEnrollmentCounts([], newAccount.KhoaHocDaThamGia, [], newAccount.KyThiDaThamGia);
 
-    res.status(201).json({ message: 'Đăng ký thành công', data: newAccount });
+    res.status(201).json({ message: 'Đăng ký thành công' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
@@ -29,9 +29,9 @@ const login = async (req, res) => {
   try {
     const { TenTaiKhoan, MatKhau } = req.body;
     const dbAccount = await Account.findOne({ TenTaiKhoan });
-    if (!dbAccount) return res.status(409).json({ message: 'Tài khoản không tồn tại' });
+    if (!dbAccount) return res.status(409).json({ message: 'Tài khoản không tồn tại', error: 'KHONG_TIM_THAY' });
     
-    if (MatKhau !== dbAccount.MatKhau) return res.status(409).json({ message: 'Sai mật khẩu' });
+    if (MatKhau !== dbAccount.MatKhau) return res.status(409).json({ message: 'Sai mật khẩu', error: 'SAI_MAT_KHAU' });
 
     const token = jwt.sign({ id: dbAccount._id }, process.env.JWT_SECRET);
     res.status(200).json({ token });
@@ -54,7 +54,7 @@ const getAccounts = async (req, res) => {
 const getAccount = async (req, res) => {
   try {
     const account = await Account.findById(req.account.id);
-    if (!account) return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+    if (!account) return res.status(404).json({ message: 'Không tìm thấy tài khoản', error: 'KHONG_TIM_THAY' });
     res.status(200).json(account);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
@@ -68,7 +68,7 @@ const updateAccount = async (req, res) => {
 
     // Lấy thông tin cũ trước khi cập nhật
     const oldAccount = await Account.findOne({ TenTaiKhoan });
-    if (!oldAccount) return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+    if (!oldAccount) return res.status(404).json({ message: 'Không tìm thấy tài khoản', error: 'KHONG_TIM_THAY' });
 
     const updateFields = {};
     const allowedFields = ['TenHienThi', 'MatKhau', 'Loai', 'SDT', 'CCCD', 'KhoaHocDaThamGia', 'KyThiDaThamGia'];
@@ -84,7 +84,7 @@ const updateAccount = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!updatedAccount) return res.status(404).json({ message: 'Không tìm thấy tài khoản để cập nhật' });
+    if (!updatedAccount) return res.status(404).json({ message: 'Không tìm thấy tài khoản để cập nhật', error: 'KHONG_TIM_THAY' });
 
     // Cập nhật sĩ số dựa trên sự khác biệt cũ/mới
     await updateEnrollmentCounts(
@@ -110,7 +110,7 @@ const deleteAccount = async (req, res) => {
     const account = await Account.findById(id);
     
     if (!account) {
-      return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản', error: 'KHONG_TIM_THAY' });
     }
 
     // Kiểm tra điều kiện xóa tài khoản
@@ -119,9 +119,7 @@ const deleteAccount = async (req, res) => {
       account.KyThiDaThamGia && account.KyThiDaThamGia.length > 0 ||
       account.ChungChiDaNhan && account.ChungChiDaNhan.length > 0
     ) {
-      return res.status(400).json({ 
-        message: 'Không thể xóa tài khoản. Tài khoản vẫn còn dữ liệu khóa học, kỳ thi hoặc chứng chỉ.' 
-      });
+      return res.status(400).json({ message: 'Không thể xóa tài khoản. Tài khoản vẫn còn dữ liệu khóa học, kỳ thi hoặc chứng chỉ.', error: 'KHONG_TIM_THAY' });
     }
 
     await Account.findByIdAndDelete(id);

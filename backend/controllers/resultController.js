@@ -20,7 +20,7 @@ const addResult = async (req, res) => {
 
     const exam = await Exam.findById(IDKyThi).populate('IDChungChi');
     if (!exam) {
-      return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+      return res.status(404).json({ message: 'Không tìm thấy kỳ thi', error: 'KHONG_TIM_THAY' });
     }
 
     const diemArray = [Diem1, Diem2];
@@ -50,10 +50,7 @@ const addResult = async (req, res) => {
       { $addToSet: { KyThiDaThamGia: IDKyThi } }
     );
 
-    res.status(201).json({
-      message: 'Thêm kết quả thành công',
-      data: newResult
-    });
+    res.status(201).json({ message: 'Thêm kết quả thành công' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
@@ -83,7 +80,7 @@ const updateResult = async (req, res) => {
 
     const exam = await Exam.findById(IDKyThi).populate('IDChungChi');
     if (!exam) {
-      return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+      return res.status(404).json({ message: 'Không tìm thấy kỳ thi', error: 'KHONG_TIM_THAY' });
     }
 
     const diemArray = [Diem1, Diem2];
@@ -123,7 +120,7 @@ const deleteResult = async (req, res) => {
     const result = await Result.findByIdAndDelete(id);
 
     if (!result) {
-      return res.status(404).json({ message: 'Không tìm thấy kết quả để xóa' });
+      return res.status(404).json({ message: 'Không tìm thấy kết quả để xóa', error: 'KHONG_TIM_THAY' });
     }
 
     res.status(200).json({ message: 'Xóa kết quả thành công' });

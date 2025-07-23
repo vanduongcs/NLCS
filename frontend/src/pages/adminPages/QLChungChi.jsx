@@ -22,6 +22,7 @@ function QLChungChi() {
   const [HocPhi, SetHocPhi] = useState('');
   const [ThoiHan, SetThoiHan] = useState('');
   const [DiemToiThieu, SetDiemToiThieu] = useState('');
+  const [DiemToiDa, SetDiemToiDa] = useState('')
 
   const formStates = {
     TenChungChi, SetTenChungChi,
@@ -29,7 +30,8 @@ function QLChungChi() {
     LePhiThi, SetLePhiThi,
     HocPhi, SetHocPhi,
     ThoiHan, SetThoiHan,
-    DiemToiThieu, SetDiemToiThieu
+    DiemToiThieu, SetDiemToiThieu,
+    DiemToiDa, SetDiemToiDa
   };
 
   const createCertificateData = () => ({
@@ -38,7 +40,8 @@ function QLChungChi() {
     LePhiThi: Number(LePhiThi),
     HocPhi: Number(HocPhi),
     ThoiHan: Number(ThoiHan),
-    DiemToiThieu: Number(DiemToiThieu)
+    DiemToiThieu: Number(DiemToiThieu),
+    DiemToiDa: Number(DiemToiDa)
   });
 
   const resetForm = () => {
@@ -48,6 +51,7 @@ function QLChungChi() {
     SetHocPhi('');
     SetThoiHan('');
     SetDiemToiThieu('');
+    SetDiemToiDa('')
     setEditingCertificate(null);
   };
 
@@ -67,7 +71,8 @@ function QLChungChi() {
         icon: 'success',
         title: 'Thành công',
         text: 'Thêm chứng chỉ thành công',
-        confirmButtonText: 'Đóng'
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#1976d2'
       });
     } catch (error) {
       showError(error.response?.data?.message || 'Không thể thêm chứng chỉ');
@@ -93,7 +98,8 @@ function QLChungChi() {
             icon: 'success',
             title: 'Đã xóa',
             text: 'Chứng chỉ đã được xóa thành công',
-            confirmButtonText: 'Đóng'
+            confirmButtonText: 'Đóng',
+            confirmButtonColor: '#1976d2'
           });
         } catch (error) {
           showError(error.response?.data?.message || 'Không thể xóa chứng chỉ');
@@ -110,6 +116,7 @@ function QLChungChi() {
     SetHocPhi(row.HocPhi);
     SetThoiHan(row.ThoiHan);
     SetDiemToiThieu(row.DiemToiThieu);
+    SetDiemToiDa(row.DiemToiDa)
   };
 
   const handleUpdate = async () => {
@@ -121,7 +128,8 @@ function QLChungChi() {
         icon: 'success',
         title: 'Thành công',
         text: 'Cập nhật chứng chỉ thành công',
-        confirmButtonText: 'Đóng'
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#1976d2'
       });
     } catch (error) {
       showError(error.response?.data?.message || 'Không thể cập nhật chứng chỉ');
@@ -147,6 +155,7 @@ function QLChungChi() {
   const columns = [
     { label: 'Tên chứng chỉ', key: 'TenChungChi' },
     { label: 'Điểm tối thiểu', key: 'DiemToiThieu' },
+    { label: 'Điểm tối đa', key: 'DiemToiDa' },
     { label: 'Loại', key: 'Loai' },
     { label: 'Lệ phí thi', key: 'LePhiThi' },
     { label: 'Học phí', key: 'HocPhi' },
@@ -160,6 +169,7 @@ function QLChungChi() {
   const columnsCanEdit = [
     { label: 'Tên chứng chỉ', key: 'TenChungChi', type: 'text' },
     { label: 'Điểm tối thiểu', key: 'DiemToiThieu', type: 'number' },
+    { label: 'Điểm tối đa', key: 'DiemToiDa', type: 'number' },
     {
       label: 'Loại', key: 'Loai', type: 'select',
       options: [
