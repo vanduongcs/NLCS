@@ -13,7 +13,7 @@ function CourseForm({ columnsCanEdit, formStates, pageContent, handleAdd, handle
         bgcolor: (theme) => theme.palette.background.paper,
         boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 10px rgba(243, 243, 243, 0.31)' : 12,
         p: '10% 10%',
-        mt: '39px',
+        mt: '42px',
         minHeight: '85.15%',
         textAlign: 'center',
         borderRadius: 2,
@@ -32,12 +32,12 @@ function CourseForm({ columnsCanEdit, formStates, pageContent, handleAdd, handle
             options={col.options}
           />
         ))}
-        
-        <Button sx={{ mt: '20px', width: '50%' }} onClick={ handleAdd } variant="contained" disabled={isEditing}>Thêm</Button>
 
-        <Button sx={{ mt: '10px', width: '50%' }} onClick={ handleUpdate } variant="contained" disabled={!isEditing} color="success">Cập nhật</Button>
+        <Button sx={{ mt: '20px', width: '50%' }} onClick={handleAdd} variant="contained" disabled={isEditing}>Thêm</Button>
 
-        <Button sx={{ mt: '10px', width: '50%'}} onClick={ resetForm } variant='contained' color="error">Hủy</Button>
+        <Button sx={{ mt: '10px', width: '50%' }} onClick={handleUpdate} variant="contained" disabled={!isEditing} color="success">Cập nhật</Button>
+
+        <Button sx={{ mt: '10px', width: '50%' }} onClick={resetForm} variant='contained' color="error">Hủy</Button>
       </Box>
     </Box>
   )

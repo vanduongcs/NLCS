@@ -6,12 +6,18 @@ import axios from 'axios'
 // MUI
 import Box from '@mui/material/Box'
 
+
+// Extend
+import { jwtDecode } from 'jwt-decode'
+import Swal from 'sweetalert2'
+
 // Custome
 import ModeSelector from './ModeSelector/ModeSelector.jsx'
 import ExtendMenu from './ExtendMenu/ExtendMenu.jsx'
 import IconButton from '@mui/material/IconButton'
 import NavButton from './NavButton/NavButton.jsx'
 import ProfileUser from './ProfileUser/ProfileUser.jsx'
+import Account from '../../../../backend/models/Account.js'
 
 function NavBar() {
   const theme = useTheme()
@@ -21,16 +27,10 @@ function NavBar() {
   const fetchAccount = async () => {
     try {
       const token = localStorage.getItem('token')
-      if (!token) throw new Error('Lỗi token')
 
-      const res = await axios.get('http://localhost:2025/api/account/tim-tai-khoan/', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      if (res.data?.Loai === 'admin' || res.data?.Loai === 'user') {
-        SetAccountInfor(res.data)
+      if (jwtDecode(token).Loai === 'admin' || jwtDecode(token).Loai === 'user') {
+        const account = await axios.get(`/account/tim-tai-khoan/${jwtDecode(token).TenTaiKhoan}`)
+        SetAccountInfor(account.data)
       } else {
         throw new Error('Không xác định được vai trò')
       }
@@ -41,11 +41,11 @@ function NavBar() {
     }
   }
 
-  const isAdmin = AccountInfor?.Loai === 'admin'
+  const isAdmin = jwtDecode(localStorage.getItem('token')).Loai === 'admin'
 
   useEffect(() => {
     fetchAccount()
-  }, [])
+  }, [AccountInfor])
 
   const clickOnLogo = () => {
     if (!isAdmin) navigate('trang-chu')

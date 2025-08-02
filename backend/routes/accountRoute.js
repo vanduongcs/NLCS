@@ -1,7 +1,6 @@
 import express from 'express'
 import accountController from '../controllers/accountController.js'
 import accountMiddleware from '../middleware/accountMiddleware.js'
-import verifyToken from '../middleware/verifyToken.js'
 
 const router = express.Router()
 
@@ -11,7 +10,9 @@ router.post('/dang-nhap', accountMiddleware.accountRLMiddleware, accountControll
 
 router.get('/tat-ca-tai-khoan', accountController.getAccounts)
 
-router.get('/tim-tai-khoan/', verifyToken, accountController.getAccount)
+router.get('/tim-tai-khoan/:TenTaiKhoan', accountController.getAccount)
+
+router.get('/lay-ket-qua-nguoi-dung/:userId', accountController.getResultWithThisAccount)
 
 router.put('/cap-nhat-tai-khoan/:TenTaiKhoan', accountController.updateAccount)
 

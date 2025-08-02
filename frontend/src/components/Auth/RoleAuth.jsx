@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import API from '../../api.jsx'
+// Extend
+import { jwtDecode } from 'jwt-decode'
+import Swal from 'sweetalert2'
 
 function RoleAuth({ children }) {
   const navigate = useNavigate()
@@ -10,11 +12,7 @@ function RoleAuth({ children }) {
       const token = localStorage.getItem('token')
       if (!token) return navigate('/dang-nhap')
 
-      const res = await API.get('/account/tim-tai-khoan/', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      if (res.data.Loai !== 'admin') {
+      if (jwtDecode(token).Loai !== 'admin') {
         localStorage.removeItem('token')
         return navigate('/dang-nhap')
       }

@@ -18,7 +18,7 @@ function KetQua() {
   const [cccd, SetCccd] = useState('')
   const [tenKyThi, SetTenKyThi] = useState('')
   const [result, SetResult] = useState(null)
-  
+
   // State để lưu toàn bộ danh sách
   const [Accounts, SetAccounts] = useState([])
   const [Exams, SetExams] = useState([])
@@ -81,7 +81,7 @@ function KetQua() {
     }
 
     // Tìm kỳ thi
-    const exam = Exams.find(e => 
+    const exam = Exams.find(e =>
       e.TenKyThi?.trim().toLowerCase() === tenKyThi.trim().toLowerCase()
     )
     if (!exam) {
@@ -127,15 +127,15 @@ function KetQua() {
     bgcolor: (theme) => theme.palette.background.paper
   }
 
-  const PageStyle = { 
+  const PageStyle = {
     p: 4,
-    minHeight: '80vh', 
-    bgcolor: (theme) => theme.palette.background.default 
+    minHeight: '80vh',
+    bgcolor: (theme) => theme.palette.background.default
   }
 
   return (
-    <Box sx={ PageStyle }>
-      <Box sx={ BannerStyle }>
+    <Box sx={PageStyle}>
+      <Box sx={BannerStyle}>
         <Box sx={{ m: 4 }}>
           <Typography variant='h5' gutterBottom>
             <strong>Lưu ý:</strong> Tên kỳ thi được thông báo trong mail gửi đến thí sinh.
@@ -145,9 +145,9 @@ function KetQua() {
           </Typography>
         </Box>
       </Box>
-      
-      <Typography sx={{ mt: 2 }} variant="h5" fontWeight="bold" gutterBottom> 
-        Tra cứu kết quả thi 
+
+      <Typography sx={{ mt: 2 }} variant="h5" fontWeight="bold" gutterBottom>
+        Tra cứu kết quả thi
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
@@ -161,8 +161,8 @@ function KetQua() {
           value={tenKyThi}
           onChange={(e) => SetTenKyThi(e.target.value)}
         />
-        <Button variant="contained" onClick={XuLyTraCuuKetQua}> 
-          Tra cứu 
+        <Button variant="contained" onClick={XuLyTraCuuKetQua}>
+          Tra cứu
         </Button>
       </Box>
 

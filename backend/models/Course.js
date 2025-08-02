@@ -11,6 +11,10 @@ const CourseSchema = new mongoose.Schema({
     ref: 'Certificate',
     required: true
   },
+  IDTaiKhoan: [{
+    type: mongoose.Schema.Types.ObjectId,
+    default: []
+  }],
   NgayKhaiGiang: {
     type: Date,
     required: true
@@ -45,7 +49,7 @@ const CourseSchema = new mongoose.Schema({
     trim: true,
     enum: ['T2 - T4 - T6', 'T3 - T5 - T7']
   }
-}, { timestamps: true })
+})
 
 const Course = mongoose.model('Course', CourseSchema)
 

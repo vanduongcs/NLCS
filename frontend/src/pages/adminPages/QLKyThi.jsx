@@ -4,32 +4,50 @@ import API from '../../api.jsx';
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx';
 import ExamForm from '../../components/Form/ExamForm.jsx';
 
+import HistoryIcon from '@mui/icons-material/History'
+import IconButton from '@mui/material/IconButton'
+
+import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetchCollectionHistory.js'
+import RelatedDataModal from '../../components/Modal/RelatedDataModal.jsx'
+
+import ListAltIcon from '@mui/icons-material/ListAlt'
+
+
 function QLKyThi() {
   // Constants
   const routeAddress = 'exam';
   const pageContent = 'kỳ thi';
-  const funcAdd = 'them-dot-thi';
-  const funcFindAll = 'tat-ca-dot-thi';
-  const funcUpdate = 'cap-nhat-dot-thi';
-  const funcDelete = 'xoa-dot-thi';
+  const funcAdd = 'them-ky-thi';
+  const funcFind = 'tim-ky-thi';
+  const funcFindAll = 'tat-ca-ky-thi';
+  const funcUpdate = 'cap-nhat-ky-thi';
+  const funcDelete = 'xoa-ky-thi';
+  const historyAddress = 'examHistory'
 
   // State
   const [EditingExam, SetEditingExam] = useState(null);
   const [certificates, setCertificates] = useState([]);
   const [Exams, SetExams] = useState([]);
+  const [currentExamId, setCurrentExamId] = useState(null);
 
   const [IDChungChi, SetIDChungChi] = useState('');
   const [NgayThi, SetNgayThi] = useState('');
   const [Buoi, SetBuoi] = useState('');
   const [SiSoToiDa, SetSiSoToiDa] = useState('');
-  const [SiSoHienTai, SetSiSoHienTai] = useState('');
+
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalData, setModalData] = useState([])
+  const [modalColumns, setModalColumns] = useState([])
+  const [modalType, setModalType] = useState('LichSu');
+  const [modalOptions, setModalOptions] = useState([]);
+  const [accounts, setAccounts] = useState([]); // Thêm state này để lưu danh sách tài khoản
 
   const formStates = {
     IDChungChi, SetIDChungChi,
     NgayThi, SetNgayThi,
     Buoi, SetBuoi,
-    SiSoToiDa, SetSiSoToiDa,
-    SiSoHienTai
+    SiSoToiDa, SetSiSoToiDa
   };
 
   // Utility functions
@@ -51,7 +69,6 @@ function QLKyThi() {
   });
 
   const resetForm = () => {
-    SetIDChungChi('');
     SetNgayThi('');
     SetBuoi('');
     SetSiSoToiDa('');
@@ -67,15 +84,17 @@ function QLKyThi() {
   // API functions
   const fetchData = async () => {
     try {
-      const [certificatesRes, examsRes] = await Promise.all([
+      const [certificatesRes, examsRes, accountsRes] = await Promise.all([
         API.get('/certificate/tat-ca-chung-chi'),
-        API.get(`/${routeAddress}/${funcFindAll}`)
+        API.get(`/${routeAddress}/${funcFindAll}`),
+        API.get('/account/tat-ca-tai-khoan')
       ]);
-
       setCertificates(certificatesRes.data);
       SetExams(examsRes.data);
+      setAccounts(accountsRes.data); // Lưu danh sách tài khoản
     } catch (error) {
-      showError('Lỗi khi tải dữ liệu');
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi tải dữ liệu', message)
     }
   };
 
@@ -84,7 +103,109 @@ function QLKyThi() {
       const res = await API.get(`/${routeAddress}/${funcFindAll}`);
       SetExams(res.data);
     } catch (error) {
-      showError(`Không thể tải danh sách ${pageContent}`);
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError(`Không thể tải danh sách ${pageContent}`, message)
+    }
+  };
+
+  // Hàm chuyển tên trường dữ liệu sang tiếng Việt
+  const getFieldDisplayName = (field) => {
+    const fieldNames = {
+      'IDChungChi': 'Chứng chỉ',
+      'NgayThi': 'Ngày thi',
+      'Buoi': 'Buổi',
+      'SiSoToiDa': 'Sĩ số tối đa',
+      'SiSoHienTai': 'Sĩ số hiện tại',
+      'TenKyThi': 'Tên kỳ thi'
+    }
+    return fieldNames[field] || field
+  }
+
+  // Hàm format giá trị lịch sử
+  const formatHistoryValue = (value, fieldName) => {
+    if (value === null || value === undefined) return '___'
+    if (fieldName === 'NgayThi') return new Date(value).toLocaleDateString('vi-VN')
+    if (typeof value === 'object') return JSON.stringify(value)
+    return String(value)
+  }
+
+  // Hàm mở modal lịch sử
+  const handleOpenModal = (type, row) => {
+    setModalType(type);
+    if (type === 'LichSu') {
+      setModalTitle('Lịch sử thay đổi');
+      setModalColumns([
+        { key: 'KieuThayDoi', label: 'Loại thay đổi' },
+        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
+        { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
+        { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
+      ]);
+      fetchCollectionHistory({
+        apiPath: '/examHistory/tim-lich-su-ky-thi',
+        id: row._id,
+        getFieldDisplayName,
+        formatHistoryValue,
+        setModalData
+      });
+      setModalOptions([]);
+    } else if (type === 'IDTaiKhoan') {
+      setCurrentExamId(row._id);
+      fetchRelatedData(row._id, row, type);
+    }
+    setModalOpen(true);
+  }
+
+  const getDisplayNameById = (id, type) => {
+    if (!id) return ''
+
+    if (type === 'IDTaiKhoan') {
+      const DSAccount = API.get('/account/tat-ca-tai-khoan')
+      const acc = DSAccount.find(acc => acc._id === id)
+      return acc ? acc.Ten : id
+    }
+  }
+
+  const fetchRelatedData = async (examId, row, type) => {
+    if (type === 'IDTaiKhoan') {
+      // Lấy danh sách tài khoản của kỳ thi này
+      const exam = Exams.find(e => e._id === examId);
+      if (!exam) {
+        setModalData([]);
+        setModalColumns([]);
+        setModalOptions([]);
+        setModalTitle('Danh sách thí sinh');
+        return;
+      }
+      // Lấy thông tin tài khoản từ accounts
+      const dsThiSinh = (exam.IDTaiKhoan || []).map(accId => {
+        const acc = accounts.find(a => a._id === accId);
+        return {
+          _id: acc?._id || accId,
+          TenHienThi: acc?.TenHienThi || accId,
+          TenTaiKhoan: acc?.TenTaiKhoan || '',
+          SDT: acc?.SDT || '',
+          CCCD: acc?.CCCD || ''
+        }
+      });
+      setModalData(dsThiSinh);
+      setModalColumns([
+        { key: 'TenHienThi', label: 'Tên thí sinh' },
+        { key: 'TenTaiKhoan', label: 'Tài khoản' },
+        { key: 'SDT', label: 'Số điện thoại' },
+        { key: 'CCCD', label: 'CCCD' }
+      ]);
+      // Tìm các tài khoản chưa có trong kỳ thi này để làm options thêm
+      const accountsListRes = await API.get('/account/tat-ca-tai-khoan');
+      const accountsList = accountsListRes.data;
+      const accountNotInExam = accountsList.filter(acc =>
+        !(exam.IDTaiKhoan || []).map(id => String(id)).includes(String(acc._id))
+      );
+      setModalOptions(accountNotInExam.map(a => ({
+        value: a._id,
+        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
+      })));
+      setModalTitle('Danh sách thí sinh');
     }
   };
 
@@ -95,7 +216,8 @@ function QLKyThi() {
       await fetchExams();
       resetForm();
     } catch (error) {
-      showError(error.response?.data?.message || `Lỗi khi thêm ${pageContent}`);
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError(`Lỗi khi thêm ${pageContent}`, message)
     }
   };
 
@@ -122,7 +244,8 @@ function QLKyThi() {
             confirmButtonText: 'Đóng'
           });
         } catch (error) {
-          showError(error.response?.data?.message || `Lỗi khi xóa ${pageContent}`);
+          const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+          showError(`Lỗi khi xóa ${pageContent}`, message)
         }
       }
     });
@@ -142,7 +265,131 @@ function QLKyThi() {
       await fetchExams();
       resetForm();
     } catch (error) {
-      showError(error.response?.data?.message || `Lỗi khi chỉnh sửa ${pageContent}`);
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError(`Lỗi khi chỉnh sửa ${pageContent}`, message)
+    }
+  };
+
+  const handleAddRelated = async (examId, type, accountId) => {
+    if (type !== 'IDTaiKhoan') return;
+
+    try {
+      // Lấy thông tin exam hiện tại
+      const examRes = await API.get(`/exam/${funcFind}/${examId}`);
+      const examData = examRes.data;
+
+      // Lấy danh sách IDTaiKhoan hiện tại, đảm bảo không null/undefined
+      const currentAccountIds = examData.IDTaiKhoan || [];
+
+      // Kiểm tra xem tài khoản đã có trong danh sách chưa
+      if (currentAccountIds.includes(accountId)) {
+        const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+        showError('Thí sinh đã có trong kỳ thi này!', message)
+        return;
+      }
+
+      // Thêm accountId vào danh sách
+      const updatedAccountIds = [...currentAccountIds, accountId];
+
+      // Cập nhật exam với danh sách IDTaiKhoan mới
+      await API.put(`/${routeAddress}/${funcUpdate}/${examId}`, {
+        IDChungChi: examData.IDChungChi?._id || examData.IDChungChi,
+        IDTaiKhoan: updatedAccountIds,
+        NgayThi: examData.NgayThi,
+        Buoi: examData.Buoi,
+        SiSoToiDa: examData.SiSoToiDa
+      });
+
+      // Refresh dữ liệu exams trong state
+      await fetchExams();
+
+      // Fetch lại dữ liệu accounts để đảm bảo có dữ liệu mới nhất
+      const accountsRes = await API.get('/account/tat-ca-tai-khoan');
+      const updatedAccounts = accountsRes.data;
+      setAccounts(updatedAccounts); // Cập nhật state accounts
+
+      // Cập nhật modal ngay lập tức với dữ liệu mới
+      const dsThiSinh = updatedAccountIds.map(accId => {
+        const acc = updatedAccounts.find(a => a._id === accId);
+        return {
+          _id: acc?._id || accId,
+          TenHienThi: acc?.TenHienThi || accId,
+          TenTaiKhoan: acc?.TenTaiKhoan || '',
+          SDT: acc?.SDT || '',
+          CCCD: acc?.CCCD || ''
+        }
+      });
+
+      setModalData(dsThiSinh);
+
+      // Cập nhật options (loại bỏ account vừa thêm)
+      const accountNotInExam = updatedAccounts.filter(acc =>
+        !updatedAccountIds.includes(acc._id)
+      );
+      setModalOptions(accountNotInExam.map(a => ({
+        value: a._id,
+        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
+      })));
+
+    } catch (error) {
+      const message = error.response?.data?.message || 'Lỗi khi thêm thí sinh vào kỳ thi.';
+      showError(message);
+
+    }
+  };
+
+  const handleDeleteRelated = async (row, examId, type) => {
+    if (type !== 'IDTaiKhoan') return;
+    try {
+      const exam = Exams.find(e => e._id === examId);
+      if (!exam) return;
+
+      const newList = (exam.IDTaiKhoan || []).filter(id => id !== row._id);
+
+      await API.put(`/exam/${funcUpdate}/${examId}`, {
+        ...exam,
+        IDTaiKhoan: newList,
+        IDChungChi: exam.IDChungChi?._id || exam.IDChungChi,
+        NgayThi: exam.NgayThi,
+        Buoi: exam.Buoi,
+        SiSoToiDa: exam.SiSoToiDa
+      });
+
+      await fetchExams();
+
+      // Cập nhật modal ngay lập tức
+      const dsThiSinh = newList.map(accId => {
+        const acc = accounts.find(a => a._id === accId);
+        return {
+          _id: acc?._id || accId,
+          TenHienThi: acc?.TenHienThi || accId,
+          TenTaiKhoan: acc?.TenTaiKhoan || '',
+          SDT: acc?.SDT || '',
+          CCCD: acc?.CCCD || ''
+        }
+      });
+
+      setModalData(dsThiSinh);
+
+      // Cập nhật options (thêm lại account vừa xóa)
+      const accountNotInExam = accounts.filter(acc =>
+        !newList.includes(acc._id)
+      );
+      setModalOptions(accountNotInExam.map(a => ({
+        value: a._id,
+        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
+      })));
+
+    } catch (error) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi xóa thí sinh', message)
+    }
+  };
+
+  // Thêm hàm handleUpdateModalOptions
+  const handleUpdateModalOptions = (type, addedId) => {
+    if (type === 'IDTaiKhoan') {
+      setModalOptions(prev => prev.filter(option => option.value !== addedId));
     }
   };
 
@@ -172,16 +419,33 @@ function QLKyThi() {
     { label: 'Buổi', key: 'Buoi' },
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa' },
     { label: 'Sĩ số hiện tại', key: 'SiSoHienTai' },
-    { label: 'Thời gian khởi tạo', key: 'createdAt', isDate: true },
-    { label: 'Lần sửa cuối', key: 'updatedAt', isDate: true },
-    { label: 'Sửa', key: 'editButton', isAction: 'edit' },
-    { label: 'Xóa', key: 'deleteButton', isAction: 'delete' }
+    {
+      label: 'DS thí sinh',
+      key: 'IDTaiKhoan',
+      render: (value, row) => (
+        <IconButton onClick={() => handleOpenModal('IDTaiKhoan', row)}>
+          <ListAltIcon color="primary" />
+        </IconButton>
+      )
+    },
+    {
+      label: 'Lịch sử',
+      key: 'LichSu',
+      align: 'center',
+      render: (value, row) => (
+        <IconButton onClick={() => handleOpenModal('LichSu', row)}>
+          <HistoryIcon color="secondary" />
+        </IconButton>
+      )
+    },
+    { label: 'Sửa', key: 'editButton', align: 'center', isAction: 'edit' },
+    { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ];
 
   const columnsCanEdit = [
     {
-      label: 'Chọn chứng chỉ', 
-      key: 'IDChungChi', 
+      label: 'Chọn chứng chỉ',
+      key: 'IDChungChi',
       type: 'select',
       options: certificates.map(cert => ({
         label: cert.TenChungChi,
@@ -190,8 +454,8 @@ function QLKyThi() {
     },
     { label: 'Ngày thi', key: 'NgayThi', type: 'date' },
     {
-      label: 'Buổi', 
-      key: 'Buoi', 
+      label: 'Buổi',
+      key: 'Buoi',
       type: 'select',
       options: [
         { value: 'Sáng', label: 'Sáng' },
@@ -202,20 +466,35 @@ function QLKyThi() {
   ];
 
   return (
-    <PageComponent
-      columns={columns}
-      columnsCanEdit={columnsCanEdit}
-      rows={Exams}
-      formStates={formStates}
-      pageContent="đợt thi"
-      handleAdd={handleAdd}
-      handleEdit={handleEdit}
-      isEditing={!!EditingExam}
-      handleUpdate={handleUpdate}
-      handleDelete={handleDelete}
-      resetForm={resetForm}
-      FormName={ExamForm}
-    />
+    <>
+      <PageComponent
+        columns={columns}
+        columnsCanEdit={columnsCanEdit}
+        rows={Exams}
+        formStates={formStates}
+        pageContent="đợt thi"
+        handleAdd={handleAdd}
+        handleEdit={handleEdit}
+        isEditing={!!EditingExam}
+        handleUpdate={handleUpdate}
+        handleDelete={handleDelete}
+        resetForm={resetForm}
+        FormName={ExamForm}
+      />
+      <RelatedDataModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        dataNeeded={currentExamId}
+        modalOptions={modalOptions}
+        type={modalType}
+        title={modalTitle}
+        data={modalData}
+        columns={modalColumns}
+        onAdd={handleAddRelated}
+        onDelete={handleDeleteRelated}
+        onUpdateOptions={handleUpdateModalOptions} // <-- Sửa từ null thành handleUpdateModalOptions
+      />
+    </>
   );
 }
 

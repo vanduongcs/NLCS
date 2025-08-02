@@ -55,10 +55,10 @@ const AccountSchema = new mongoose.Schema({
   }],
   ChungChiDaNhan: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Certificate',
+    ref: 'CertReceived',
     default: []
   }]
-}, { timestamps: true })
+})
 
 const Account = mongoose.model('Account', AccountSchema)
 

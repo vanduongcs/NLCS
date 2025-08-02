@@ -3,12 +3,14 @@ import examController from '../controllers/examController.js'
 
 const router = express.Router()
 
-router.post('/them-dot-thi', examController.addExam)
+router.post('/them-ky-thi', examController.addExam)
 
-router.get('/tat-ca-dot-thi', examController.getExams)
+router.get('/tim-ky-thi/:examId', examController.getExam)
 
-router.put('/cap-nhat-dot-thi/:id', examController.updateExam)
+router.get('/tat-ca-ky-thi', examController.getExams)
 
-router.delete('/xoa-dot-thi/:id', examController.deleteExam)
+router.put('/cap-nhat-ky-thi/:examId', examController.updateExam)
+
+router.delete('/xoa-ky-thi/:id', examController.deleteExam)
 
 export default router

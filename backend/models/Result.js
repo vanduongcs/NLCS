@@ -36,17 +36,10 @@ const ResultSchema = new mongoose.Schema({
     min: 0
   },
   NgayCap: {
-    type: Date,
-    required: true
+    type: Date
   },
   NgayHetHan: {
     type: Date
-  },
-  TrangThai: {
-    type: String,
-    trim: true,
-    default: 'Chưa lấy',
-    enum: ['Chưa lấy', 'Đã lấy']
   },
   KQ: {
     type: String,
@@ -54,7 +47,7 @@ const ResultSchema = new mongoose.Schema({
     trim: true,
     default: 'Không đạt',
   }
-}, { timestamps: true })
+})
 
 const Result = mongoose.model('Result', ResultSchema)
 

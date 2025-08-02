@@ -26,8 +26,6 @@ function QLKetQua() {
   const [Diem2, SetDiem2] = useState('');
   const [Diem3, SetDiem3] = useState('');
   const [Diem4, SetDiem4] = useState('');
-  const [NgayCap, SetNgayCap] = useState('');
-  const [TrangThai, SetTrangThai] = useState('');
 
   const formStates = {
     IDNguoiDung, SetIDNguoiDung,
@@ -35,41 +33,34 @@ function QLKetQua() {
     Diem1, SetDiem1,
     Diem2, SetDiem2,
     Diem3, SetDiem3,
-    Diem4, SetDiem4,
-    NgayCap, SetNgayCap,
-    TrangThai, SetTrangThai
+    Diem4, SetDiem4
   };
 
   // Utility functions
-  const showAlert = (title) => {
+  const showError = (title, message = 'Vui lòng thử lại sau.') => {
     Swal.fire({
-      icon: 'warning',
+      icon: 'error',
       title,
+      text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
-    });
-  };
+    })
+  }
 
   const createResultData = () => ({
     IDNguoiDung,
     IDKyThi,
-    Diem1: Number(Diem1),
-    Diem2: Number(Diem2),
+    Diem1: Diem1 ? Number(Diem1) : undefined,
+    Diem2: Diem2 ? Number(Diem2) : undefined,
     Diem3: Diem3 ? Number(Diem3) : undefined,
-    Diem4: Diem4 ? Number(Diem4) : undefined,
-    NgayCap: new Date(NgayCap),
-    TrangThai: TrangThai || 'Chưa lấy'
+    Diem4: Diem4 ? Number(Diem4) : undefined
   });
 
   const resetForm = () => {
-    SetIDNguoiDung('');
-    SetIDKyThi('');
     SetDiem1('');
     SetDiem2('');
     SetDiem3('');
     SetDiem4('');
-    SetNgayCap('');
-    SetTrangThai('');
     setEditingResult(null);
   };
 
@@ -80,7 +71,7 @@ function QLKetQua() {
         API.get('/account/tat-ca-tai-khoan'),
         API.get('/certificate/tat-ca-chung-chi'),
         API.get(`/${routeAddress}/${funcFindAll}`),
-        API.get('/exam/tat-ca-dot-thi')
+        API.get('/exam/tat-ca-ky-thi')
       ]);
 
       setAccounts(accountsRes.data);
@@ -88,36 +79,38 @@ function QLKetQua() {
       setResults(resultsRes.data);
       setExams(examsRes.data);
     } catch (error) {
-      showAlert('Lỗi khi tải dữ liệu');
+      showError('Lỗi khi tải dữ liệu');
     }
   };
 
   const fetchResults = () => {
     API.get(`/${routeAddress}/${funcFindAll}`)
       .then(res => setResults(res.data))
-      .catch(() => showAlert('Lỗi khi tải kết quả'));
+      .catch(() => showError('Lỗi khi tải kết quả'));
   };
 
   // Event handlers
   const handleAdd = () => {
     const exam = exams.find(e => e._id === IDKyThi);
-    if (!IDNguoiDung || !exam) {
-      showAlert('Không tìm thấy người dùng hoặc kỳ thi');
-      return;
-    }
 
     API.post(`/${routeAddress}/${funcAdd}`, createResultData())
       .then(() => {
         fetchResults();
         resetForm();
       })
-      .catch(() => showAlert('Lỗi khi thêm kết quả'));
+      .catch((error) => {
+        const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+        showError('Lỗi khi thêm kết quả', message)
+      });
   };
 
   const handleDelete = async (id) => {
     API.delete(`/${routeAddress}/${funcDelete}/${id}`)
       .then(() => fetchResults())
-      .catch(() => showAlert('Lỗi khi xóa kết quả'));
+      .catch((error) => {
+        const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+        showError('Lỗi khi xóa kết quả', message)
+      });
   };
 
   const handleEdit = (row) => {
@@ -127,15 +120,13 @@ function QLKetQua() {
     SetDiem1(row.Diem1?.toString() || '');
     SetDiem2(row.Diem2?.toString() || '');
     SetDiem3(row.Diem3?.toString() || '');
-    SetDiem4(row.Diem4?.toString() || '');
-    SetNgayCap(new Date(row.NgayCap).toISOString().slice(0, 10));
-    SetTrangThai(row.TrangThai);
+    SetDiem4(row.Diem4?.toString() || '')
   };
 
   const handleUpdate = () => {
     const exam = exams.find(e => e._id === IDKyThi);
     if (!IDNguoiDung || !exam) {
-      showAlert('Không tìm thấy tài khoản hoặc kỳ thi');
+      showError('Không tìm thấy tài khoản hoặc kỳ thi');
       return;
     }
 
@@ -144,7 +135,10 @@ function QLKetQua() {
         fetchResults();
         resetForm();
       })
-      .catch(() => showAlert('Lỗi khi cập nhật kết quả'));
+      .catch((error) => {
+        const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+        showError('Lỗi khi cập nhật kết quả', message)
+      });
   };
 
   useEffect(() => {
@@ -164,12 +158,17 @@ function QLKetQua() {
     { label: 'Kết quả', key: 'KQ' },
     { label: 'Ngày cấp', key: 'NgayCap', isDate: true },
     { label: 'Ngày hết hạn', key: 'NgayHetHan', isDate: true },
-    { label: 'Trạng thái', key: 'TrangThai' },
-    { label: 'Tạo lúc', key: 'createdAt', isDate: true },
-    { label: 'Cập nhật lúc', key: 'updatedAt', isDate: true },
-    { label: 'Sửa', key: 'editButton', isAction: 'edit' },
-    { label: 'Xóa', key: 'deleteButton', isAction: 'delete' }
+    { label: 'Sửa', key: 'editButton', align: 'center', isAction: 'edit' },
+    { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ];
+
+  // hàm getOptionsWithAccount tìm các exam có _id trùng với KyThiDaThamGia trong account tương ứng với giá trị của IDNguoiDung
+  const getOptionsWithAccount = (IDNguoiDung) => {
+    const account = accounts.find(acc => acc._id === IDNguoiDung);
+    if (!account || !account.KyThiDaThamGia) return [];
+    return exams.filter(exam => account.KyThiDaThamGia.includes(exam._id))
+      .map(exam => ({ value: exam._id, label: exam.TenKyThi }));
+  }
 
   const columnsCanEdit = [
     {
@@ -182,22 +181,12 @@ function QLKetQua() {
       label: 'Kỳ thi',
       key: 'IDKyThi',
       type: 'autocomplete',
-      options: exams.map(e => ({ value: e._id, label: e.TenKyThi }))
+      options: getOptionsWithAccount(IDNguoiDung)
     },
     { label: 'Điểm 1', key: 'Diem1', type: 'number' },
     { label: 'Điểm 2', key: 'Diem2', type: 'number' },
     { label: 'Điểm 3', key: 'Diem3', type: 'number' },
-    { label: 'Điểm 4', key: 'Diem4', type: 'number' },
-    { label: 'Ngày cấp', key: 'NgayCap', type: 'date' },
-    {
-      label: 'Trạng thái',
-      key: 'TrangThai',
-      type: 'select',
-      options: [
-        { value: 'Chưa lấy', label: 'Chưa lấy' },
-        { value: 'Đã lấy', label: 'Đã lấy' }
-      ]
-    }
+    { label: 'Điểm 4', key: 'Diem4', type: 'number' }
   ];
 
   return (

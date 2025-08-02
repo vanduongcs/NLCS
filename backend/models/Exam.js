@@ -6,6 +6,10 @@ const ExamSchema = new mongoose.Schema({
     ref: 'Certificate',
     required: true
   },
+  IDTaiKhoan: [{
+    type: mongoose.Schema.Types.ObjectId,
+    default: []
+  }],
   TenKyThi: {
     type: String,
     required: true,
@@ -34,7 +38,7 @@ const ExamSchema = new mongoose.Schema({
     max: 40,
     default: 0
   }
-}, { timestamps: true })
+})
 
 const Exam = mongoose.model('Exam', ExamSchema)
 

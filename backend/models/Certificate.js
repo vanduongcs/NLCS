@@ -38,7 +38,7 @@ const CertificateSchema = new mongoose.Schema({
     min: 1,
     default: 1
   }
-}, { timestamps: true })
+})
 
 const Certificate = mongoose.model('Certificate', CertificateSchema)
 

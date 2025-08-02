@@ -7,6 +7,7 @@ import LoginField from './LoginField/LoginField.jsx'
 
 // Extend
 import Swal from 'sweetalert2'
+import { jwtDecode } from 'jwt-decode'
 
 // Custome
 import LoginButton from './LoginButton/LoginButton.jsx'
@@ -45,13 +46,7 @@ function LoginForm() {
         confirmButtonColor: '#1976d2'
       });
 
-      const rAuth = await API.get('/account/tim-tai-khoan/', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (rAuth.data.Loai === 'admin') {
+      if (jwtDecode(token).Loai === 'admin') {
         navigate('/quan-ly-chung-chi');
       } else {
         navigate('/trang-chu');

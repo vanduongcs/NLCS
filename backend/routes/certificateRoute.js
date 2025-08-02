@@ -5,6 +5,8 @@ const router = express.Router()
 
 router.post('/them-chung-chi', certificateController.addCertificate)
 
+router.get('/tim-chung-chi/:id', certificateController.getCertificate)
+
 router.get('/tat-ca-chung-chi', certificateController.getCertificates)
 
 router.put('/cap-nhat-chung-chi/:id', certificateController.updateCertificate)

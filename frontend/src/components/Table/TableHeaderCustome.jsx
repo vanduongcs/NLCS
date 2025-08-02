@@ -9,7 +9,7 @@ function TableHeaderCustome({ columns }) {
         {columns.map((column, index) => (
           <TableCell
             key={index}
-            align={column.isAction ? 'center' : 'left'}
+            align={column.align === 'center' ? 'center' : 'left'}
             sx={{
               fontWeight: 'bold'
             }}

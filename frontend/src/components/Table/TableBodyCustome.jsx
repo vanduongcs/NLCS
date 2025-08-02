@@ -31,45 +31,59 @@ function TableBodyCustome({ rows, columns, handleDelete, handleEdit }) {
     <TableBody>
       {rows.map((row, rowIndex) => (
         <TableRow key={row._id || `row-${rowIndex}`}>
-          {columns.map((column, colIndex) => (
-            <TableCell key={`${row._id || `row-${rowIndex}`}-${column.key}-${colIndex}`} sx={{ textAlign: 'left' }}>
-              {column.isAction === 'edit' ? (
+          {columns.map((column, colIndex) => {
+            let content = '';
+
+            if (column.isAction === 'edit') {
+              content = (
                 <EditIcon
                   sx={{ cursor: 'pointer', color: (theme) => theme.palette.primary.main }}
                   onClick={() => handleEdit(row)}
                 />
-              ) : column.isAction === 'delete' ? (
+              );
+            } else if (column.isAction === 'delete') {
+              content = (
                 <DeleteIcon
                   sx={{ cursor: 'pointer', color: (theme) => theme.palette.error.main }}
                   onClick={() => handleDelete(row._id)}
                 />
-              ) : column.render ? (
-                column.render(row[column.key], row)
-              ) : Array.isArray(row[column.key]) ? (
-                row[column.key].map((item, i) => (
-                  <span key={`${row._id || `row-${rowIndex}`}-${column.key}-${i}`}>
-                    {`[${item}]${i < row[column.key].length - 1 ? ', ' : ''}`}
-                  </span>
-                ))
-              ) : column.key === 'NgayHetHan' ? (
+              );
+            } else if (column.render) {
+              content = column.render(row[column.key], row);
+            } else if (Array.isArray(row[column.key])) {
+              content = row[column.key].map((item, i) => (
+                <span key={`${row._id || `row-${rowIndex}`}-${column.key}-${i}`}>
+                  {`[${item}]${i < row[column.key].length - 1 ? ', ' : ''}`}
+                </span>
+              ));
+            } else if (column.key === 'NgayHetHan') {
+              content =
                 row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === ''
                   ? 'Vô thời hạn'
-                  : formatOnlyDate(row[column.key])
-              ) : column.key === 'ThoiHan' ? (
+                  : formatOnlyDate(row[column.key]);
+            } else if (column.key === 'ThoiHan') {
+              content =
                 row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === ''
                   ? 'Vô thời hạn'
-                  : `${row[column.key]} năm`
-              ) : column.isDate ? (
+                  : `${row[column.key]} năm`;
+            } else if (column.isDate) {
+              content =
                 column.key === 'createdAt' || column.key === 'updatedAt'
                   ? formatDateToGMT7(row[column.key])
-                  : formatOnlyDate(row[column.key])
-              ) : (
-                row[column.key] !== undefined && row[column.key] !== null
-                  ? row[column.key]
-                  : ''
-              )}
-            </TableCell>
-          ))}
+                  : formatOnlyDate(row[column.key]);
+            } else {
+              content = row[column.key] !== undefined && row[column.key] !== null ? row[column.key] : '';
+            }
+
+            return (
+              <TableCell
+                key={`${row._id || `row-${rowIndex}`}-${column.key}-${colIndex}`}
+                align={column.align || 'left'}
+              >
+                {content}
+              </TableCell>
+            );
+          })}
         </TableRow>
       ))}
     </TableBody>

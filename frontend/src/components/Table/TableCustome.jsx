@@ -75,7 +75,7 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
   return (
     <Box>
       {/* Search & Filter */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+      <Box sx={{ mt: 2, mb: '4px', display: 'flex', gap: 2 }}>
         <TextField
           label="Tìm kiếm"
           variant="outlined"
@@ -106,10 +106,10 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
       </Box>
 
       {/* Table */}
-      <TableContainer 
+      <TableContainer
         sx={{
           borderRadius: 2,
-          bgcolor: (theme) => theme.palette.background.paper, 
+          bgcolor: (theme) => theme.palette.background.paper,
           boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 10px rgba(243, 243, 243, 0.31)' : 12,
         }}>
         <Table>
