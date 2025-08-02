@@ -417,8 +417,8 @@ function QLKyThi() {
     },
     { label: 'Ngày thi', key: 'NgayThi', isDate: true },
     { label: 'Buổi', key: 'Buoi' },
-    { label: 'Sĩ số tối đa', key: 'SiSoToiDa' },
-    { label: 'Sĩ số hiện tại', key: 'SiSoHienTai' },
+    { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' },
+    { label: 'Sĩ số hiện tại', key: 'SiSoHienTai', type: 'number' },
     {
       label: 'DS thí sinh',
       key: 'IDTaiKhoan',
@@ -446,7 +446,7 @@ function QLKyThi() {
     {
       label: 'Chọn chứng chỉ',
       key: 'IDChungChi',
-      type: 'select',
+      type: 'autocomplete',
       options: certificates.map(cert => ({
         label: cert.TenChungChi,
         value: cert._id

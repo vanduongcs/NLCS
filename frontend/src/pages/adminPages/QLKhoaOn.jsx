@@ -98,7 +98,8 @@ function QLKhoaOn() {
       });
       SetCourses(coursesWForeignData);
     } catch (error) {
-      showError('Lỗi khi tải danh sách khóa ôn');
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi tải danh sách khóa ôn', message)
     }
   };
 
@@ -123,7 +124,8 @@ function QLKhoaOn() {
       });
       SetCourses(coursesWForeignData);
     } catch (error) {
-      showError('Lỗi khi tải dữ liệu');
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi tải dữ liệu', message)
     }
   };
 
@@ -226,14 +228,9 @@ function QLKhoaOn() {
       const response = await API.post(`/${routeAddress}/${funcAdd}`, createCourseData());
       await fetchCourses();
       resetForm();
-      Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: response.data.message || 'Thêm khóa ôn thành công',
-        confirmButtonText: 'Đóng'
-      });
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể thêm khóa ôn');
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Không thể thêm khóa ôn', message)
     }
   };
 
@@ -252,21 +249,16 @@ function QLKhoaOn() {
         try {
           const response = await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
           await fetchCourses();
-          Swal.fire({
-            icon: 'success',
-            title: 'Đã xóa',
-            text: response.data.message || 'Xóa khóa ôn thành công',
-            confirmButtonText: 'Đóng'
-          });
         } catch (error) {
-          showError(error.response?.data?.message || 'Không thể xóa khóa ôn');
+          const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+          showError('Không thể xóa khóa ôn', message)
         }
       }
     });
   };
 
   const handleEdit = (row) => {
-    SetCertificateID(row.IDChungChi?._id);
+    SetCertificateID(row.IDChungChi?._id || row.IDChungChi);
     SetLichHoc(row.LichHoc);
     SetNgayKhaiGiang(new Date(row.NgayKhaiGiang).toISOString().slice(0, 10));
     SetNgayKetThuc(new Date(row.NgayKetThuc).toISOString().slice(0, 10));
@@ -280,14 +272,9 @@ function QLKhoaOn() {
       await API.put(`/${routeAddress}/${funcUpdate}/${EditingCourse}`, createCourseData());
       await fetchCourses();
       resetForm();
-      Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: 'Cập nhật khóa ôn thành công',
-        confirmButtonText: 'Đóng'
-      });
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể cập nhật khóa ôn');
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Không thể cập nhật khóa ôn', message)
     }
   };
 
@@ -304,7 +291,7 @@ function QLKhoaOn() {
 
       // Kiểm tra xem tài khoản đã có trong danh sách chưa
       if (currentAccountIds.includes(accountId)) {
-        showError('Học viên đã có trong khóa học này!');
+        showError('Không thể thêm học viên', 'Học viên đã đăng ký vào khóa học này trước đó');
         return;
       }
 
@@ -457,7 +444,7 @@ function QLKhoaOn() {
     {
       label: 'Tên chứng chỉ',
       key: 'CertificateID',
-      type: 'select',
+      type: 'autocomplete',
       options: Certificates.map(cert => ({ value: cert._id, label: cert.TenChungChi }))
     },
     {

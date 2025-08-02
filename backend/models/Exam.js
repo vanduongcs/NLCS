@@ -28,7 +28,7 @@ const ExamSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0,
-    max: 40,
+    max: 300,
     default: 1
   },
   SiSoHienTai: {

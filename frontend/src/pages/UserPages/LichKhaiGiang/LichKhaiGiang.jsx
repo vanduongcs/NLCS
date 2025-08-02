@@ -8,6 +8,7 @@ import Swal from 'sweetalert2'
 import TableCustome from '../../../components/Table/TableCustome.jsx'
 import API from '../../../api.jsx'
 import ThongTin from './ThongTin.jsx'
+import { jwtDecode } from 'jwt-decode'
 
 function LichKhaiGiang() {
   const [tab, setTab] = useState(0)
@@ -15,19 +16,18 @@ function LichKhaiGiang() {
   const [user, setUser] = useState(null)
 
   const token = localStorage.getItem('token')
-  const config = { headers: { Authorization: `Bearer ${token}` } }
 
   // Hàm fetch dữ liệu ban đầu
   const FetchData = async () => {
     try {
       const [coursesResponse, userResponse] = await Promise.all([
         API.get('/course/tat-ca-khoa-on'),
-        API.get('/account/tim-tai-khoan', config)
+        API.get(`/account/tim-tai-khoan/${jwtDecode(token).TenTaiKhoan}`)
       ])
 
       const now = new Date()
       const chuaKhaiGiang = coursesResponse.data.filter(c => new Date(c.NgayKhaiGiang) > now)
-      
+
       setCourses(chuaKhaiGiang)
       setUser(userResponse.data)
     } catch (error) {
@@ -97,7 +97,7 @@ function LichKhaiGiang() {
       FetchData() // Gọi lại để cập nhật dữ liệu
     } catch (err) {
       Swal.fire({
-        title: 'Lỗi thao tác', 
+        title: 'Lỗi thao tác',
         text: 'Vui lòng thử lại',
         icon: 'error',
         confirmButtonColor: '#1976d2'
@@ -128,7 +128,7 @@ function LichKhaiGiang() {
 
   // phân nhóm theo loại
   const coursesNgoaiNgu = courses.filter(c => c.IDChungChi?.Loai === 'Ngoại ngữ')
-  const coursesTinHoc   = courses.filter(c => c.IDChungChi?.Loai === 'Tin học')
+  const coursesTinHoc = courses.filter(c => c.IDChungChi?.Loai === 'Tin học')
 
   const ContainerStyle = {
     minHeight: '100vh',
@@ -138,10 +138,10 @@ function LichKhaiGiang() {
     bgcolor: (theme) => theme.palette.background.default,
     borderRadius: 3
   }
-  
+
   return (
-    <Box 
-      sx={ ContainerStyle }>
+    <Box
+      sx={ContainerStyle}>
 
       <ThongTin />
 
@@ -154,8 +154,8 @@ function LichKhaiGiang() {
         <Tab label="Tin học" />
       </Tabs>
 
-      { tab === 0 && (<TableCustome columns={columns} rows={coursesNgoaiNgu} />) }
-      { tab === 1 && (<TableCustome columns={columns} rows={coursesTinHoc} />) }
+      {tab === 0 && (<TableCustome columns={columns} rows={coursesNgoaiNgu} />)}
+      {tab === 1 && (<TableCustome columns={columns} rows={coursesTinHoc} />)}
     </Box>
   )
 }

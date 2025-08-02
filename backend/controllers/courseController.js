@@ -18,6 +18,25 @@ const addCourse = async (req, res) => {
       return res.status(400).json({ message: 'Ngày khai giảng phải nhỏ hơn ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
     }
 
+    // Add schedule validation with correct day numbers
+    const ThuTrongTuan = new Date(NgayKhaiGiang).getDay();
+    const ThuTrongTuanKT = new Date(NgayKetThuc).getDay();
+    if (LichHoc === 'T2 - T4 - T6') {
+      if (![1, 3, 5].includes(ThuTrongTuan) || ![1, 3, 5].includes(ThuTrongTuanKT)) {
+        return res.status(400).json({
+          message: 'Ngày khai giảng và kết thúc phải là thứ 2, 4 hoặc 6',
+          error: 'SAI_MIEN_GIA_TRI'
+        });
+      }
+    } else if (LichHoc === 'T3 - T5 - T7') {
+      if (![2, 4, 6].includes(ThuTrongTuan) || ![2, 4, 6].includes(ThuTrongTuanKT)) {
+        return res.status(400).json({
+          message: 'Ngày khai giảng và kết thúc phải là thứ 3, 5 hoặc 7',
+          error: 'SAI_MIEN_GIA_TRI'
+        });
+      }
+    }
+
     const certificate = await Certificate.findById(IDChungChi);
 
     if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' });
@@ -97,6 +116,24 @@ const updateCourse = async (req, res) => {
     const { IDChungChi, NgayKhaiGiang, IDTaiKhoan, NgayKetThuc, Buoi, SiSoToiDa, LichHoc } = req.body;
 
     const allowedFields = ['IDChungChi', 'NgayKhaiGiang', 'IDTaiKhoan', 'NgayKetThuc', 'Buoi', 'SiSoToiDa', 'LichHoc']
+
+    const ThuTrongTuan = new Date(NgayKhaiGiang).getDay()
+    const ThuTrongTuanKT = new Date(NgayKetThuc).getDay()
+    if (LichHoc === 'T2 - T4 - T6') {
+      if (![1, 3, 5].includes(ThuTrongTuan) || ![1, 3, 5].includes(ThuTrongTuanKT)) {
+        return res.status(400).json({
+          message: 'Ngày khai giảng và kết thúc phải là thứ 2, 4 hoặc 6',
+          error: 'SAI_MIEN_GIA_TRI'
+        })
+      }
+    } else if (LichHoc === 'T3 - T5 - T7') {
+      if (![2, 4, 6].includes(ThuTrongTuan) || ![2, 4, 6].includes(ThuTrongTuanKT)) {
+        return res.status(400).json({
+          message: 'Ngày khai giảng và kết thúc phải là thứ 3, 5 hoặc 7',
+          error: 'SAI_MIEN_GIA_TRI'
+        })
+      }
+    }
 
     // Lấy thông tin course hiện tại
     const oldCourse = await Course.findById(id);

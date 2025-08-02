@@ -34,7 +34,7 @@ const CourseSchema = new mongoose.Schema({
     default: 1,
     required: true,
     min: 1,
-    max: 40
+    max: 80
   },
   SiSoHienTai: {
     type: Number,
