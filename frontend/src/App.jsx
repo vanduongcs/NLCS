@@ -11,7 +11,7 @@ import DangKy from './pages/UserPages/DangKy.jsx'
 import TrangChu from './pages/UserPages/TrangChu/TrangChu.jsx'
 import LichThi from './pages/UserPages/LichThi/LichThi.jsx'
 import LichKhaiGiang from './pages/UserPages/LichKhaiGiang/LichKhaiGiang.jsx'
-import KetQua from './pages/UserPages/KetQua.jsx'
+import KetQua from './pages/UserPages/KetQua/KetQua.jsx'
 import KTChungChi from './pages/UserPages/KTChungChi/KTChungChi.jsx'
 
 // Admin zone
@@ -31,9 +31,9 @@ function Layout() {
 
   return (
     <Box>
-      {!isAuthPage && <NavBar />}
+      {!isAuthPage && <PrivateRoute><NavBar /></PrivateRoute>}
 
-      <Box>
+      <Box sx={{ mt: !isAuthPage ? (theme) => theme.nlcs.navBarHeight : 0 }}>
         {/* Danh sách các đường dẫn */}
         <Routes>
           {/* Phần đăng nhập */}
@@ -50,7 +50,7 @@ function Layout() {
 
           {/* Phần Admin */}
           <Route path='/quan-ly-chung-chi' element={<PrivateRoute><RoleAuth><QLChungChi /></RoleAuth></PrivateRoute>} />
-          <Route path='/quan-ly-khoa-on' element={<PrivateRoute><RoleAuth><QLKhoaOn /></RoleAuth></PrivateRoute>} />
+          <Route path='/quan-ly-khoa-hoc' element={<PrivateRoute><RoleAuth><QLKhoaOn /></RoleAuth></PrivateRoute>} />
           <Route path='/quan-ly-ky-thi' element={<PrivateRoute><RoleAuth><QLKyThi /></RoleAuth></PrivateRoute>} />
           <Route path='/quan-ly-nguoi-dung' element={<PrivateRoute><RoleAuth><QLNguoiDung /></RoleAuth></PrivateRoute>} />
           <Route path='/quan-ly-ket-qua' element={<PrivateRoute><RoleAuth><QLKetQua></QLKetQua></RoleAuth></PrivateRoute>} />

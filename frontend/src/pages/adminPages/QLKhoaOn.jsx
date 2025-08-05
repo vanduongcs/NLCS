@@ -15,7 +15,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 function QLKhoaOn() {
   // Constants
   const routeAddress = 'course';
-  const pageContent = 'khóa ôn';
+  const pageContent = 'khóa học';
   const funcAdd = 'them-khoa-on';
   const funcFind = 'tim-khoa-on';
   const funcFindAll = 'tat-ca-khoa-on';
@@ -35,7 +35,6 @@ function QLKhoaOn() {
   const [NgayKetThuc, SetNgayKetThuc] = useState('');
   const [Buoi, SetBuoi] = useState('');
   const [SiSoToiDa, SetSiSoToiDa] = useState('');
-  const [SiSoHienTai, SetSiSoHienTai] = useState('');
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
@@ -51,8 +50,7 @@ function QLKhoaOn() {
     NgayKhaiGiang, SetNgayKhaiGiang,
     NgayKetThuc, SetNgayKetThuc,
     Buoi, SetBuoi,
-    SiSoToiDa, SetSiSoToiDa,
-    SiSoHienTai
+    SiSoToiDa, SetSiSoToiDa
   };
 
   // Utility functions
@@ -76,7 +74,6 @@ function QLKhoaOn() {
   });
 
   const resetForm = () => {
-    SetCertificateID('');
     SetLichHoc('');
     SetNgayKhaiGiang('');
     SetNgayKetThuc('');
@@ -99,7 +96,7 @@ function QLKhoaOn() {
       SetCourses(coursesWForeignData);
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Lỗi khi tải danh sách khóa ôn', message)
+      showError('Lỗi khi tải danh sách khóa học', message)
     }
   };
 
@@ -129,26 +126,63 @@ function QLKhoaOn() {
     }
   };
 
-  // Hàm chuyển tên trường dữ liệu sang tiếng Việt
-  const getFieldDisplayName = (field) => {
-    const fieldNames = {
+  // Convert từ id sang tên hiển thị
+  const getDisplayNameById = (id, type) => {
+    // Nếu không có id, trả về '___'
+    if (!id) return '___'
+
+    // Tìm kiếm trong các mảng tương ứng với loại dữ liệu
+    switch (type) {
+      case 'IDChungChi':
+        const certificate = Certificates.find(c => c._id === id)
+        return certificate ? certificate.TenChungChi : id
+      case 'IDTaiKhoan':
+        const account = accounts.find(a => a._id === id)
+        return account ? account.TenHienThi : id
+      default:
+        return id
+    }
+  }
+
+  // Thêm hàm getFieldDisplayName
+  const getFieldDisplayName = (fieldName) => {
+    const fieldMapping = {
       'IDChungChi': 'Chứng chỉ',
       'LichHoc': 'Lịch học',
       'NgayKhaiGiang': 'Ngày khai giảng',
       'NgayKetThuc': 'Ngày kết thúc',
       'Buoi': 'Buổi',
       'SiSoToiDa': 'Sĩ số tối đa',
-      'SiSoHienTai': 'Sĩ số hiện tại',
+      'IDTaiKhoan': 'Danh sách học viên',
       'TenKhoaHoc': 'Tên khóa học'
     }
-    return fieldNames[field] || field
+    return fieldMapping[fieldName] || fieldName
   }
 
   // Hàm format giá trị lịch sử
   const formatHistoryValue = (value, fieldName) => {
     if (value === null || value === undefined) return '___'
-    if (fieldName === 'NgayKhaiGiang' || fieldName === 'NgayKetThuc') return new Date(value).toLocaleDateString('vi-VN')
-    if (typeof value === 'object') return JSON.stringify(value)
+
+    if (fieldName === 'NgayKhaiGiang' || fieldName === 'NgayKetThuc') {
+      return new Date(value).toLocaleDateString('vi-VN')
+    }
+
+    // Nếu là array of IDs
+    if (Array.isArray(value)) {
+      return value.map(id => getDisplayNameById(id, fieldName)).join(', ')
+    }
+
+    // Nếu là string ID đơn lẻ cho các trường có thể chứa ID
+    if (typeof value === 'string' &&
+      (fieldName === 'IDChungChi' || fieldName === 'IDTaiKhoan')) {
+      return getDisplayNameById(value, fieldName)
+    }
+
+    // Nếu là object
+    if (typeof value === 'object') {
+      return JSON.stringify(value)
+    }
+
     return String(value)
   }
 
@@ -230,14 +264,14 @@ function QLKhoaOn() {
       resetForm();
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Không thể thêm khóa ôn', message)
+      showError('Không thể thêm khóa học', message)
     }
   };
 
   const handleDelete = async (id) => {
     Swal.fire({
       title: 'Xác nhận xóa?',
-      text: 'Bạn có chắc muốn xóa khóa ôn này?',
+      text: 'Bạn có chắc muốn xóa khóa học này?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -251,7 +285,7 @@ function QLKhoaOn() {
           await fetchCourses();
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-          showError('Không thể xóa khóa ôn', message)
+          showError('Không thể xóa khóa học', message)
         }
       }
     });
@@ -269,12 +303,13 @@ function QLKhoaOn() {
 
   const handleUpdate = async () => {
     try {
+      console.log('course data:', createCourseData());
       await API.put(`/${routeAddress}/${funcUpdate}/${EditingCourse}`, createCourseData());
       await fetchCourses();
       resetForm();
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Không thể cập nhật khóa ôn', message)
+      showError('Không thể cập nhật khóa học', message)
     }
   };
 

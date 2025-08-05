@@ -4,7 +4,7 @@ import accountMiddleware from '../middleware/accountMiddleware.js'
 
 const router = express.Router()
 
-router.post('/dang-ky', accountMiddleware.accountRLMiddleware, accountMiddleware.checkTenHienThi, accountController.register)
+router.post('/dang-ky', accountMiddleware.accountRLMiddleware, accountMiddleware.checkThongTinDK, accountController.register)
 
 router.post('/dang-nhap', accountMiddleware.accountRLMiddleware, accountController.login)
 

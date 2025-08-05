@@ -29,7 +29,6 @@ function ResultForm({ columnsCanEdit, formStates, pageContent, handleAdd, handle
             func={formStates['Set' + col.key]}
             type={col.type}
             options={col.options}
-            multiple={col.multiple}
           />
         ))}
 

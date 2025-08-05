@@ -41,7 +41,7 @@ const CourseSchema = new mongoose.Schema({
     default: 0,
     required: true,
     min: 0,
-    max: 40
+    max: 80
   },
   LichHoc: {
     type: String,

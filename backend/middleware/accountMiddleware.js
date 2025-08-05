@@ -14,17 +14,24 @@ const accountRLMiddleware = (req, res, next) => {
   }
 
   next();
+
 };
 
-const checkTenHienThi = (req, res, next) => {
-  const { TenHienThi } = req.body;
+const checkThongTinDK = (req, res, next) => {
+  const { TenHienThi, CCCD, SDT } = req.body;
   if (!TenHienThi) {
-    return res.status(400).json({ message: 'Vui lòng nhập tên người dùng' });
+    return res.status(400).json({ message: 'Vui lòng nhập tên người dùng', error: 'TEN_HIEN_THI_TRONG' });
+  }
+  if (!CCCD) {
+    return res.status(400).json({ message: 'Vui lòng nhập CCCD', error: 'CCCD_TRONG' });
+  }
+  if (!SDT) {
+    return res.status(400).json({ message: 'Vui lòng nhập số điện thoại', error: 'SDT_TRONG' });
   }
   next();
 };
 
 export default {
   accountRLMiddleware,
-  checkTenHienThi
+  checkThongTinDK
 };

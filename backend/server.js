@@ -15,6 +15,7 @@ import accountHistoryRoute from './routes/accountHistoryRoute.js'
 import certificateHistoryRoute from './routes/certificateHistoryRoute.js'
 import examHistoryRoute from './routes/examHistoryRoute.js'
 import courseHistoryRoute from './routes/courseHistoryRoute.js'
+import resultHistoryRoute from './routes/resultHistoryRoute.js'
 
 const app = express()
 dotenv.config()
@@ -44,3 +45,4 @@ app.use('/api/certReceived', certReceivedRoute)
 app.use('/api/certificateHistory', certificateHistoryRoute)
 app.use('/api/examHistory', examHistoryRoute)
 app.use('/api/courseHistory', courseHistoryRoute)
+app.use('/api/resultHistory', resultHistoryRoute)

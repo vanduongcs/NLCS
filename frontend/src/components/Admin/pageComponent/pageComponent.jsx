@@ -75,21 +75,6 @@ function PageComponent({
           </Box>
         )}
       </Box>
-
-      {/* ChatBot Icon */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          zIndex: 1000
-        }}
-      >
-        <img
-          src="/chatbot-icon.png"
-          style={{ width: '50px', height: '50px', cursor: 'pointer' }}
-        />
-      </Box>
     </Box>
   )
 }

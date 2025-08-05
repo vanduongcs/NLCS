@@ -11,9 +11,12 @@ import Button from '@mui/material/Button'
 
 // Custome
 import TableCustome from '../../../components/Table/TableCustome.jsx'
-import LTBanner from './LTBanner.jsx'
+import ThongTin from './ThongTin.jsx'
 import QuyDinhThi from './QuyDinhThi.jsx'
 import API from '../../../api.jsx'
+import renderActionButton from '../../../components/renderActionButton/renderActionButton.jsx'
+
+import { jwtDecode } from 'jwt-decode'
 
 function LichThi() {
   const [tab, setTab] = useState(0)
@@ -21,43 +24,38 @@ function LichThi() {
   const [user, setUser] = useState(null)
 
   const token = localStorage.getItem('token')
-  const config = { headers: { Authorization: `Bearer ${token}` } }
 
-  // Tách riêng các hàm fetch để dễ quản lý
-  const fetchExams = async () => {
+  const FetchData = async () => {
     try {
-      const res = await API.get('/exam/tat-ca-dot-thi')
+      const [ExamsResponse, userResponse] = await Promise.all([
+        API.get('/exam/tat-ca-ky-thi'),
+        API.get(`/account/tim-tai-khoan/${jwtDecode(token).TenTaiKhoan}`)
+      ])
+
       const now = new Date()
-      const upcoming = res.data.filter(e => new Date(e.NgayThi) > now)
-      setExams(upcoming)
-    } catch (err) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Không thể tải danh sách kỳ thi',
-        confirmButtonText: 'Đóng',
-        confirmButtonColor: '#1976d2'
-      })
-    }
-  }
+      const chuaThi = ExamsResponse.data.filter(e => new Date(e.NgayThi) > now)
 
-  const fetchUser = async () => {
-    try {
-      const res = await API.get('/account/tim-tai-khoan', config)
-      setUser(res.data)
-    } catch (err) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Không thể tải danh sách người dùng',
-        confirmButtonText: 'Đóng',
-        confirmButtonColor: '#1976d2'
-      })
+      setExams(chuaThi)
+      setUser(userResponse.data)
+    } catch (error) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi tải dữ liệu', message)
     }
   }
 
   useEffect(() => {
-    fetchExams()
-    fetchUser()
+    FetchData()
   }, [])
+
+  const showError = (title, message = 'Vui lòng thử lại sau.') => {
+    Swal.fire({
+      icon: 'error',
+      title,
+      text: message,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#1976d2'
+    })
+  }
 
   // Kiểm tra đã đăng ký kỳ thi
   const isRegistered = (examId) =>
@@ -79,64 +77,23 @@ function LichThi() {
           KyThiDaThamGia: newList
         }
       )
-      Swal.fire({
-        title: action === 'add' ? 'Đăng ký thành công!' : 'Hủy đăng ký thành công!',
-        icon: 'success',
-        confirmButtonColor: '#1976d2'
-      })
-      fetchExams()
-      fetchUser()
-    } catch (err) {
-      console.error('Lỗi cập nhật:', err)
-      Swal.fire({
-        title: 'Lỗi thao tác', 
-        text: 'Vui lòng thử lại',
-        icon: 'error',
-        confirmButtonColor: '#1976d2'
-      })
+      FetchData() // Cập nhật lại danh sách kỳ thi
+    } catch (error) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi đăng ký', message)
     }
-  }
-
-  // Render nút đăng ký/hủy
-  const renderActionButton = (exam) => {
-    const daDangKy = isRegistered(exam._id)
-    const hetCho = exam.SiSoToiDa !== undefined && exam.SiSoHienTai >= exam.SiSoToiDa
-
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        {hetCho && !daDangKy ? (
-          <Button
-            variant="outlined"
-            color="error"
-            disabled
-            sx={{ minWidth: 120, height: 36, mx: 'auto' }}
-          >
-            Đã hết chỗ
-          </Button>
-        ) : (
-          <Button
-            variant={daDangKy ? 'outlined' : 'contained'}
-            color={daDangKy ? 'error' : 'primary'}
-            size="small"
-            sx={{ minWidth: 120, height: 36, mx: 'auto' }}
-            onClick={() => handleDangKyOrHuy(exam, daDangKy ? 'remove' : 'add')}
-          >
-            {daDangKy ? 'Hủy đăng ký' : 'Đăng ký'}
-          </Button>
-        )}
-      </Box>
-    )
   }
 
   // Định nghĩa cột cho bảng
   const columns = [
     { label: 'Tên kỳ thi', key: 'TenKyThi' },
-    { label: 'Ngày thi', key: 'NgayThi', isDate: true },
     {
       label: 'Chứng chỉ',
       key: 'IDChungChi',
       render: (_, row) => row.IDChungChi?.TenChungChi || 'Không rõ'
     },
+    { label: 'Ngày thi', key: 'NgayThi', isDate: true },
+    { label: 'Buổi thi', key: 'Buoi' },
     {
       label: 'Sĩ số',
       key: 'SiSoHienTai',
@@ -145,8 +102,9 @@ function LichThi() {
     {
       label: 'Thao tác',
       key: 'DangKy',
+      align: 'center',
       isAction: true,
-      render: (_, row) => renderActionButton(row)
+      render: (_, row) => renderActionButton(row, user, handleDangKyOrHuy, 'exam') // Thêm type = 'exam'
     }
   ]
 
@@ -165,7 +123,7 @@ function LichThi() {
         borderRadius: 3
       }}
     >
-      <LTBanner />
+      <ThongTin />
 
       <QuyDinhThi />
 

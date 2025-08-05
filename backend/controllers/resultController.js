@@ -92,6 +92,11 @@ const updateResult = async (req, res) => {
     const exam = await Exam.findById(IDKyThi).populate('IDChungChi');
     if (!exam) return res.status(404).json({ message: 'Không tìm thấy kỳ thi', error: 'KHONG_TIM_THAY' });
 
+    const existingIDKyThi = await Result.findOne({ IDNguoiDung, IDKyThi });
+    if (existingIDKyThi && existingIDKyThi._id.toString() !== id) {
+      return res.status(400).json({ message: 'Người dùng đã có kết quả cho kỳ thi này', error: 'DA_CO_KET_QUA' });
+    }
+
     // Kiểm tra có bao nhiêu trường dữ liệu điểm
     const diemArray = [Diem1, Diem2];
     if (Diem3 !== undefined) diemArray.push(Diem3);
@@ -100,16 +105,9 @@ const updateResult = async (req, res) => {
     const DiemTK = tinhDiemTK(diemArray);
     const KQ = DiemTK >= exam.IDChungChi.DiemToiThieu ? 'Đạt' : 'Không đạt';
 
-    if (KQ !== 'Đạt') {
-      const certReceivedNeedToDelete = await CertReceived.findOne({ IDKetQua: id })
-      if (certReceivedNeedToDelete) {
-        await certReceivedNeedToDelete.deleteOne();
-      }
-    } else {
-      await certReceivedController.updateCertStatus(IDNguoiDung, updatedResult._id, 'Chưa lấy');
-    }
-
     const oldResult = await Result.findById(id)
+
+    console.log('oldResult', oldResult)
 
     const updatedResult = await Result.findByIdAndUpdate(
       id,
@@ -125,6 +123,15 @@ const updateResult = async (req, res) => {
       },
       { new: true, runValidators: true }
     )
+
+    if (KQ !== 'Đạt') {
+      const certReceivedNeedToDelete = await CertReceived.findOne({ IDKetQua: id })
+      if (certReceivedNeedToDelete) {
+        await certReceivedNeedToDelete.deleteOne();
+      }
+    } else {
+      await certReceivedController.updateCertStatus(IDNguoiDung, updatedResult._id, 'Chưa lấy');
+    }
 
     const history = await ResultHistory.findOne({ IDKetQua: id });
     if (!history) {

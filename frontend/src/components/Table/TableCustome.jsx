@@ -21,7 +21,6 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
   const [page, setPage] = useState(1)
   const rowsPerPage = 10
 
-  // Tự động chọn cột đầu tiên hợp lệ nếu chưa chọn
   useEffect(() => {
     if (!selectedColumn) {
       const firstVisibleColumn = columns.find(col => !col.isAction)
@@ -46,30 +45,23 @@ function TableCustome({ columns, rows, handleDelete, handleEdit }) {
     return column?.isDate
   }
 
-  const removeAccents = (str) =>
-    str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
-
   const filteredRows = rows.filter(row => {
-    if (!searchText || !selectedColumn) return true
+    if (!searchText) return true
 
-    const column = columns.find(col => col.key === selectedColumn)
-    if (!column || column.isAction) return true // Không lọc theo cột không hợp lệ
+    let value = row[selectedColumn]
 
-    const rawValue = row[selectedColumn]
-    const searchValue = column?.customSearchValue
-      ? column.customSearchValue(row)
-      : rawValue
+    if (isDateColumn(selectedColumn)) {
+      value = formatDate(value)
+    }
 
-    if (!searchValue) return false
+    if (value.toString().includes('.') && typeof value === 'number') {
+      value = value.toFixed(0) - 1
+    }
 
-    const compareValue = isDateColumn(selectedColumn)
-      ? formatDate(searchValue)
-      : searchValue.toString()
-
-    return removeAccents(compareValue).includes(removeAccents(searchText.trim()))
+    return value.toString().includes(searchText.trim())
   })
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage))
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1
   const paginatedRows = filteredRows.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
   return (

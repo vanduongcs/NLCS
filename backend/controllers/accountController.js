@@ -1,31 +1,50 @@
 import jwt from 'jsonwebtoken'
+
+// Main Collections:
 import Account from '../models/Account.js'
 import Course from '../models/Course.js'
 import Exam from '../models/Exam.js'
 import Result from '../models/Result.js'
+
+// Sub Collections:
 import CertReceived from '../models/CertReceived.js'
+
+// History Collection:
 import AccountHistory from '../models/AccountHistory.js'
 
 // Đăng ký tài khoản
 const register = async (req, res) => {
   try {
-    const { Loai, TenHienThi, TenTaiKhoan, MatKhau, CCCD = '', SDT = '' } = req.body
+    const {
+      Loai,
+      TenHienThi,
+      TenTaiKhoan,
+      MatKhau,
+      CCCD = '',
+      SDT = ''
+    } = req.body
 
+    // Kiểm tra các trường dữ liệu này có tồn tại trong collection Account từ trước không
     const [existUser, existCCCD, existSDT] = await Promise.all([
       Account.findOne({ TenTaiKhoan }),
       Account.findOne({ CCCD }),
       Account.findOne({ SDT })
     ])
 
+    // Kiểm tra bắt lỗi
     if (existUser) return res.status(400).json({ message: 'Tài khoản đã tồn tại', error: 'LOI_TRUNG_LAP_DU_LIEU' })
 
     if (existCCCD) return res.status(400).json({ message: 'Căn cước đã tồn tại', error: 'LOI_TRUNG_LAP_DU_LIEU' })
 
     if (existSDT) return res.status(400).json({ message: 'Số điện thoại đã tồn tại', error: 'LOI_TRUNG_LAP_DU_LIEU' })
 
+    // Tạo object tài khoản mới
     const newAccount = new Account({ Loai, TenHienThi, TenTaiKhoan, MatKhau, CCCD, SDT })
+
+    // Lưu object tài khoản mới vào collection Account
     await newAccount.save()
 
+    // Tạo lịch sử tài khoản tương ứng với tài khoản vừa thêm vào collection Account
     const history = new AccountHistory({
       IDTaiKhoan: newAccount._id,
       DSTruongDLThayDoi: [{
@@ -55,7 +74,7 @@ const login = async (req, res) => {
     if (!user || user.MatKhau !== MatKhau) {
       return res.status(409).json({ message: 'Sai thông tin đăng nhập', error: 'SAI_DANG_NHAP' })
     }
-    const token = jwt.sign({ id: user._id, TenTaiKhoan, Loai: user.Loai }, process.env.JWT_SECRET)
+    const token = jwt.sign({ id: user._id, TenTaiKhoan, Loai: user.Loai }, process.env.JWT_SECRET, { expiresIn: '365d' })
     res.status(200).json({ token })
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message })
@@ -98,6 +117,49 @@ const updateAccount = async (req, res) => {
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) updateFields[field] = req.body[field]
     })
+
+    if (updateFields.KhoaHocDaThamGia) {
+      // Kiểm tra xem các phần tử thêm vào ChungChiDaNhan có phần tử nào có giá trị Buoi và lịch học trùng nhau không, nếu có thì kiểm tra Ngày KhaiGiang cùa 2 khóa học cái nào lớn hơn, lấy NgayKhaiGiang lớn hơn so với NgayKetThuc của khóa học còn lại nếu NgayKhaiGiang <= NgayKetThuc thì không cho phép thêm
+      const newCourses = updateFields.KhoaHocDaThamGia.filter(id => !oldAccount.KhoaHocDaThamGia.includes(id))
+      const existingCourses = oldAccount.KhoaHocDaThamGia.filter(id => !newCourses.includes(id))
+
+      for (const newCourseId of newCourses) {
+        const newCourse = await Course.findById(newCourseId)
+        if (!newCourse) continue
+
+        for (const existingCourseId of existingCourses) {
+          const existingCourse = await Course.findById(existingCourseId)
+          if (!existingCourse) continue
+
+          // Kiểm tra Buoi và LichHoc có trùng nhau không
+          if (newCourse.Buoi === existingCourse.Buoi && newCourse.LichHoc === existingCourse.LichHoc) {
+            // Kiểm tra NgayKhaiGiang và NgayKetThuc
+            if (new Date(newCourse.NgayKhaiGiang) <= new Date(existingCourse.NgayKetThuc)) {
+              return res.status(400).json({ message: 'Không thể đăng ký khóa học trùng lịch', error: 'TRUNG_LICH_HOC' })
+            }
+          }
+        }
+      }
+    } else if (updateFields.KyThiDaThamGia) {
+      // Kiểm tra xem các phần tử thêm vào KyThiDaThamGia có phần tử nào có giá trị Buoi và NgayThi trùng nhau không, nếu có thì không cho phép thêm
+      const newExams = updateFields.KyThiDaThamGia.filter(id => !oldAccount.KyThiDaThamGia.includes(id))
+      const existingExams = oldAccount.KyThiDaThamGia.filter(id => !newExams.includes(id))
+
+      for (const newExamId of newExams) {
+        const newExam = await Exam.findById(newExamId)
+        if (!newExam) continue
+
+        for (const existingExamId of existingExams) {
+          const existingExam = await Exam.findById(existingExamId)
+          if (!existingExam) continue
+
+          // Kiểm tra Buoi và NgayThi có trùng nhau không
+          if (newExam.Buoi === existingExam.Buoi && new Date(newExam.NgayThi).getTime() === new Date(existingExam.NgayThi).getTime()) {
+            return res.status(400).json({ message: 'Không thể đăng ký kỳ thi trùng lịch', error: 'TRUNG_LICH_THI' })
+          }
+        }
+      }
+    }
 
     const updatedAccount = await Account.findOneAndUpdate(
       { TenTaiKhoan },
@@ -167,6 +229,7 @@ const updateAccount = async (req, res) => {
         ...addedExams.map(id => Exam.findByIdAndUpdate(id, { $addToSet: { IDTaiKhoan: updatedAccount._id } })),
         ...removedExams.map(id => Exam.findByIdAndUpdate(id, { $pull: { IDTaiKhoan: updatedAccount._id } }))
       ])
+
       // Cập nhật lại SiSoHienTai cho các exam bị ảnh hưởng
       const affectedExamIds = [...addedExams, ...removedExams]
       await Promise.all(

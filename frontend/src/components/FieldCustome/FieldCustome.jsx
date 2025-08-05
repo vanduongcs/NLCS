@@ -1,19 +1,14 @@
-import {
-  TextField,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Checkbox,
-  ListItemText,
-  Autocomplete
-} from '@mui/material'
+import TextField from '@mui/material/TextField'
+import MenuItem from '@mui/material/MenuItem'
+import Select from '@mui/material/Select'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Autocomplete from '@mui/material/Autocomplete'
 
-function FieldCustome({ label, val, func, type = 'text', options = [], multiple = false, onChange }) {
+function FieldCustome({ label, val, func, type = 'text', options = [] }) {
   const handleChange = (event) => {
     const value = event.target.value
     func(value)
-    onChange?.(value)
   }
 
   if (type === 'select') {
@@ -24,18 +19,14 @@ function FieldCustome({ label, val, func, type = 'text', options = [], multiple 
           label={label}
           value={val}
           onChange={handleChange}
-          multiple={multiple}
           renderValue={(selected) =>
-            multiple
-              ? selected.map(id => options.find(opt => opt.value === id)?.label).join(', ')
-              : options.find(opt => opt.value === val)?.label || ''
+            options.find(opt => opt.value === val)?.label || ''
           }
           MenuProps={{ disableScrollLock: true }}
         >
           {options.map(opt => (
             <MenuItem key={opt.value} value={opt.value}>
-              {multiple && <Checkbox checked={val?.includes(opt.value)} />}
-              <ListItemText primary={opt.label} />
+              {opt.label}
             </MenuItem>
           ))}
         </Select>
@@ -63,12 +54,10 @@ function FieldCustome({ label, val, func, type = 'text', options = [], multiple 
         onChange={(_, newVal) => {
           const newValue = newVal?.value || (typeof newVal === 'string' ? newVal : '')
           func(newValue)
-          onChange?.(newValue)
         }}
         onInputChange={(_, inputVal, reason) => {
           if (reason === 'input') {
             func(inputVal)
-            onChange?.(inputVal)
           }
         }}
         renderInput={(params) => (
@@ -114,7 +103,6 @@ function FieldCustome({ label, val, func, type = 'text', options = [], multiple 
       onChange={(e) => {
         const newValue = type === 'number' ? Number(e.target.value) : e.target.value
         func(newValue)
-        onChange?.(newValue)
       }}
       type={type}
       sx={{ mt: 2 }}

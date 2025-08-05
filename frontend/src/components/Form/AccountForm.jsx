@@ -31,7 +31,6 @@ function AccountForm({ columnsCanEdit, formStates, pageContent, handleAdd, handl
             func={formStates['Set' + col.key]}
             type={col.type}
             options={col.options || []}
-            multiple={col.multiple}
           />
         ))}
 

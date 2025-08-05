@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
-import {
-  Box, Tabs, Tab, Typography, Button
-} from '@mui/material'
+import { jwtDecode } from 'jwt-decode'
+
+// MUI
+import Box from '@mui/material/Box'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
+import Typography from '@mui/material/Typography'
 import Swal from 'sweetalert2'
 
 // Table tùy chỉnh
 import TableCustome from '../../../components/Table/TableCustome.jsx'
 import API from '../../../api.jsx'
 import ThongTin from './ThongTin.jsx'
-import { jwtDecode } from 'jwt-decode'
+import renderActionButton from '../../../components/renderActionButton/renderActionButton.jsx'
 
 function LichKhaiGiang() {
   const [tab, setTab] = useState(0)
@@ -31,13 +35,8 @@ function LichKhaiGiang() {
       setCourses(chuaKhaiGiang)
       setUser(userResponse.data)
     } catch (error) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Không thể tải dữ liệu',
-        text: error.message,
-        confirmButtonText: 'Đóng',
-        confirmButtonColor: '#1976d2'
-      })
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi tải dữ liệu', message)
     }
   }
 
@@ -45,28 +44,14 @@ function LichKhaiGiang() {
     FetchData()
   }, [])
 
-  const renderActionButton = (course) => {
-    const daDangKy = user?.KhoaHocDaThamGia?.includes(course._id)
-    const hetCho = course.SiSoToiDa !== undefined && course.SiSoHienTai >= course.SiSoToiDa
-
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Button
-          variant={hetCho && !daDangKy ? 'outlined' : daDangKy ? 'outlined' : 'contained'}
-          color={hetCho && !daDangKy ? 'error' : daDangKy ? 'error' : 'primary'}
-          size="small"
-          disabled={hetCho && !daDangKy}
-          onClick={() => handleDangKyOrHuy(course, daDangKy ? 'remove' : 'add')}
-          sx={{ minWidth: 120, height: 36, mx: 'auto' }}
-        >
-          {hetCho && !daDangKy
-            ? 'Đã hết chỗ'
-            : daDangKy
-              ? 'Hủy đăng ký'
-              : 'Đăng ký'}
-        </Button>
-      </Box>
-    )
+  const showError = (title, message = 'Vui lòng thử lại sau.') => {
+    Swal.fire({
+      icon: 'error',
+      title,
+      text: message,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#1976d2'
+    })
   }
 
   const handleDangKyOrHuy = async (course, action) => {
@@ -80,49 +65,39 @@ function LichKhaiGiang() {
       await API.put(
         `/account/cap-nhat-tai-khoan/${user.TenTaiKhoan}`,
         {
-          TenHienThi: user.TenHienThi,
-          MatKhau: user.MatKhau,
-          SDT: user.SDT,
-          Loai: user.Loai,
-          KhoaThiThamGia: user.KhoaThiThamGia,
-          DSKhoaHocDaThamGia: oldList,
+          ...user,
           KhoaHocDaThamGia: newList
         }
       )
-      Swal.fire({
-        title: action === 'add' ? 'Đăng ký thành công!' : 'Hủy đăng ký thành công!',
-        icon: 'success',
-        confirmButtonColor: '#1976d2'
-      })
       FetchData() // Gọi lại để cập nhật dữ liệu
-    } catch (err) {
-      Swal.fire({
-        title: 'Lỗi thao tác',
-        text: 'Vui lòng thử lại',
-        icon: 'error',
-        confirmButtonColor: '#1976d2'
-      })
+    } catch (error) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi khi đăng ký', message)
     }
   }
 
   const columns = [
     { label: 'Tên khóa học', key: 'TenKhoaHoc' },
     { label: 'Ngày khai giảng', key: 'NgayKhaiGiang', isDate: true },
+    { label: 'Ngày kết thúc', key: 'NgayKetThuc', isDate: true },
+    { label: 'Buổi học', key: 'Buoi' },
     {
       label: 'Chứng chỉ',
       key: 'IDChungChi',
       render: (_, row) => row.IDChungChi?.TenChungChi || 'Không rõ'
     },
+    { label: 'Lịch học', key: 'LichHoc' },
     {
-      label: 'Số lượng',
+      label: 'Sĩ số',
       key: 'SiSoHienTai',
       render: (_, row) => `${row.SiSoHienTai}/${row.SiSoToiDa ?? '∞'}`
     },
     {
       label: 'Thao tác',
       key: 'DangKy',
+      align: 'center',
       isAction: true,
-      render: (_, row) => renderActionButton(row)
+      render: (_, row) => renderActionButton(row, user, handleDangKyOrHuy, 'course') // Thêm type = 'course'
     }
   ]
 

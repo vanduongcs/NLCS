@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 
 // MUI
 import Box from '@mui/material/Box'
 
-
 // Extend
 import { jwtDecode } from 'jwt-decode'
-import Swal from 'sweetalert2'
 
 // Custome
 import ModeSelector from './ModeSelector/ModeSelector.jsx'
@@ -17,7 +14,7 @@ import ExtendMenu from './ExtendMenu/ExtendMenu.jsx'
 import IconButton from '@mui/material/IconButton'
 import NavButton from './NavButton/NavButton.jsx'
 import ProfileUser from './ProfileUser/ProfileUser.jsx'
-import Account from '../../../../backend/models/Account.js'
+import API from '../../api.jsx'
 
 function NavBar() {
   const theme = useTheme()
@@ -28,8 +25,14 @@ function NavBar() {
     try {
       const token = localStorage.getItem('token')
 
-      if (jwtDecode(token).Loai === 'admin' || jwtDecode(token).Loai === 'user') {
-        const account = await axios.get(`/account/tim-tai-khoan/${jwtDecode(token).TenTaiKhoan}`)
+      if (!token) {
+        throw new Error('Không có token')
+      }
+
+      const decodedToken = jwtDecode(token)
+
+      if (decodedToken.Loai === 'admin' || decodedToken.Loai === 'user') {
+        const account = await API.get(`/account/tim-tai-khoan/${decodedToken.TenTaiKhoan}`)
         SetAccountInfor(account.data)
       } else {
         throw new Error('Không xác định được vai trò')
@@ -41,7 +44,19 @@ function NavBar() {
     }
   }
 
-  const isAdmin = jwtDecode(localStorage.getItem('token')).Loai === 'admin'
+  const getIsAdmin = () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return false
+      return jwtDecode(token).Loai === 'admin'
+    } catch (err) {
+      localStorage.removeItem('token')
+      navigate('/dang-nhap')
+      return false
+    }
+  }
+
+  const isAdmin = getIsAdmin()
 
   useEffect(() => {
     fetchAccount()
@@ -53,7 +68,16 @@ function NavBar() {
   }
 
   return (
-    <Box sx={{ alignItems: 'center', height: theme.nlcs.navBarHeight, width: '100%' }}>
+    <Box sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1100,
+      alignItems: 'center',
+      height: theme.nlcs.navBarHeight,
+      width: '100%'
+    }}>
       <Box
         sx={{
           bgcolor: theme.palette.info.dark,
@@ -78,20 +102,20 @@ function NavBar() {
 
           {!isAdmin && (
             <Box sx={{ display: { xs: 'none', sm: 'none', md: 'none', lg: 'flex' }, alignItems: 'center', gap: 2, ml: 2 }}>
-              <NavButton content='Trang Chủ' path='/trang-chu' />
+              <NavButton content='Trang chủ' path='/trang-chu' />
               <NavButton content='Lịch dự kiến' children1='Lịch khai giảng' children2='Lịch thi' childrenPath1='/lich-khai-giang' childrenPath2='/lich-thi' />
-              <NavButton content='Kết Quả' path='/ket-qua' />
-              <NavButton content='Xác Thực' path='/xac-thuc-chung-chi' />
+              <NavButton content='Kết quả' path='/ket-qua' />
+              <NavButton content='Xác thực' path='/xac-thuc-chung-chi' />
             </Box>
           )}
 
           {isAdmin && (
             <Box sx={{ display: { xs: 'none', sm: 'none', md: 'none', lg: 'flex' }, alignItems: 'center', gap: 2, ml: 2 }}>
-              <NavButton content='Chứng Chỉ' path='/quan-ly-chung-chi' />
-              <NavButton content='Người Dùng' path='/quan-ly-nguoi-dung' />
-              <NavButton content='Kỳ Thi' path='/quan-ly-ky-thi' />
-              <NavButton content='Khóa Ôn' path='/quan-ly-khoa-on' />
+              <NavButton content='Chứng chỉ' path='/quan-ly-chung-chi' />
+              <NavButton content='Khóa học' path='/quan-ly-khoa-hoc' />
+              <NavButton content='Kỳ thi' path='/quan-ly-ky-thi' />
               <NavButton content='Kết quả' path='/quan-ly-ket-qua' />
+              <NavButton content='Người dùng' path='/quan-ly-nguoi-dung' />
             </Box>
           )}
         </Box>

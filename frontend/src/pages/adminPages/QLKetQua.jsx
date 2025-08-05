@@ -4,6 +4,12 @@ import API from '../../api.jsx';
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx';
 import ResultForm from '../../components/Form/ResultForm.jsx';
 
+// Thêm import cho History Icon và Modal
+import HistoryIcon from '@mui/icons-material/History'
+import IconButton from '@mui/material/IconButton'
+import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetchCollectionHistory.js'
+import RelatedDataModal from '../../components/Modal/RelatedDataModal.jsx'
+
 function QLKetQua() {
   // Constants
   const routeAddress = 'result';
@@ -26,6 +32,13 @@ function QLKetQua() {
   const [Diem2, SetDiem2] = useState('');
   const [Diem3, SetDiem3] = useState('');
   const [Diem4, SetDiem4] = useState('');
+
+  // Thêm state cho modal
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalData, setModalData] = useState([])
+  const [modalColumns, setModalColumns] = useState([])
+  const [modalType, setModalType] = useState('LichSu');
 
   const formStates = {
     IDNguoiDung, SetIDNguoiDung,
@@ -63,6 +76,58 @@ function QLKetQua() {
     SetDiem4('');
     setEditingResult(null);
   };
+
+  // Thêm các hàm utility cho lịch sử
+  const getFieldDisplayName = (field) => {
+    const fieldNames = {
+      'IDNguoiDung': 'Người dùng',
+      'IDKyThi': 'Kỳ thi',
+      'Diem1': 'Điểm 1',
+      'Diem2': 'Điểm 2',
+      'Diem3': 'Điểm 3',
+      'Diem4': 'Điểm 4',
+      'DiemTK': 'Điểm tổng kết',
+      'KQ': 'Kết quả',
+      'NgayCap': 'Ngày cấp',
+      'NgayHetHan': 'Ngày hết hạn'
+    }
+    return fieldNames[field] || field
+  }
+
+  const formatHistoryValue = (value, fieldName) => {
+    if (value === null || value === undefined) return '___'
+    if (fieldName === 'NgayCap' || fieldName === 'NgayHetHan') {
+      return new Date(value).toLocaleDateString('vi-VN')
+    }
+    if (fieldName === 'IDKyThi') {
+      const valueDisplay = exams.find(e => e._id === value)
+      return valueDisplay.TenKyThi
+    }
+    return String(value)
+  }
+
+  // Hàm mở modal lịch sử
+  const handleOpenModal = (type, row) => {
+    setModalType(type);
+    if (type === 'LichSu') {
+      setModalTitle('Lịch sử thay đổi kết quả');
+      setModalColumns([
+        { key: 'KieuThayDoi', label: 'Loại thay đổi' },
+        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
+        { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
+        { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
+      ]);
+      fetchCollectionHistory({
+        apiPath: '/resultHistory/tim-lich-su-ket-qua',
+        id: row._id,
+        getFieldDisplayName,
+        formatHistoryValue,
+        setModalData
+      });
+    }
+    setModalOpen(true);
+  }
 
   // API functions
   const fetchData = async () => {
@@ -158,6 +223,16 @@ function QLKetQua() {
     { label: 'Kết quả', key: 'KQ' },
     { label: 'Ngày cấp', key: 'NgayCap', isDate: true },
     { label: 'Ngày hết hạn', key: 'NgayHetHan', isDate: true },
+    {
+      label: 'Lịch sử',
+      key: 'LichSu',
+      align: 'center',
+      render: (value, row) => (
+        <IconButton onClick={() => handleOpenModal('LichSu', row)}>
+          <HistoryIcon color="secondary" />
+        </IconButton>
+      )
+    },
     { label: 'Sửa', key: 'editButton', align: 'center', isAction: 'edit' },
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ];
@@ -190,20 +265,35 @@ function QLKetQua() {
   ];
 
   return (
-    <PageComponent
-      columns={columns}
-      columnsCanEdit={columnsCanEdit}
-      rows={results}
-      formStates={formStates}
-      pageContent={pageContent}
-      handleAdd={handleAdd}
-      handleEdit={handleEdit}
-      isEditing={!!editingResult}
-      handleUpdate={handleUpdate}
-      handleDelete={handleDelete}
-      resetForm={resetForm}
-      FormName={ResultForm}
-    />
+    <>
+      <PageComponent
+        columns={columns}
+        columnsCanEdit={columnsCanEdit}
+        rows={results}
+        formStates={formStates}
+        pageContent={pageContent}
+        handleAdd={handleAdd}
+        handleEdit={handleEdit}
+        isEditing={!!editingResult}
+        handleUpdate={handleUpdate}
+        handleDelete={handleDelete}
+        resetForm={resetForm}
+        FormName={ResultForm}
+      />
+      <RelatedDataModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        dataNeeded={null}
+        modalOptions={[]}
+        type={modalType}
+        title={modalTitle}
+        data={modalData}
+        columns={modalColumns}
+        onAdd={null}
+        onDelete={null}
+        onUpdateOptions={null}
+      />
+    </>
   );
 }
 

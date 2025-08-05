@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
-import axios from 'axios'
+import { jwtDecode } from 'jwt-decode'
 
 // MUI
 import Box from '@mui/material/Box'
@@ -12,7 +12,7 @@ import Divider from '@mui/material/Divider'
 import Typography from '@mui/material/Typography'
 
 // Custome
-import API from '../../api.jsx'
+import API from '../../../api.jsx'
 
 function KetQua() {
   const [cccd, SetCccd] = useState('')
@@ -29,7 +29,7 @@ function KetQua() {
     try {
       const [accountsRes, examsRes, resultsRes] = await Promise.all([
         API.get('/account/tat-ca-tai-khoan'),
-        API.get('/exam/tat-ca-dot-thi'),
+        API.get('/exam/tat-ca-ky-thi'),
         API.get('/result/tat-ca-ket-qua')
       ])
 
@@ -37,8 +37,8 @@ function KetQua() {
       SetExams(examsRes.data)
       SetResults(resultsRes.data)
     } catch (error) {
-      console.error('Lỗi tải dữ liệu:', error)
-      Swal.fire('Lỗi', 'Không thể tải dữ liệu', 'error')
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Lỗi không thể tải dữ liệu', message)
     }
   }
 
@@ -46,6 +46,16 @@ function KetQua() {
   useEffect(() => {
     FetchData()
   }, [])
+
+  const showError = (title, message = 'Vui lòng thử lại sau.') => {
+    Swal.fire({
+      icon: 'error',
+      title,
+      text: message,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#1976d2'
+    })
+  }
 
   // Hàm format ngày
   function FormatDate(dateStr) {
@@ -68,50 +78,62 @@ function KetQua() {
   }
 
   // Xử lý tìm kiếm kết quả
-  const XuLyTraCuuKetQua = () => {
+  const ResultSearchHandle = async () => {
     // Kiểm tra đầu vào
     if (!cccd.trim() || !tenKyThi.trim()) {
       return Swal.fire('Vui lòng nhập đủ CCCD và tên kỳ thi', '', 'warning')
     }
 
     // Tìm tài khoản
-    const acc = Accounts.find(a => a.CCCD?.trim() === cccd.trim())
-    if (!acc) {
-      return Swal.fire('Không tìm thấy thí sinh này', '', 'warning')
+    const accHandleCCCD = Accounts.find(acc =>
+      acc.CCCD?.trim().toLowerCase() === cccd.trim().toLowerCase()
+    )
+
+    if (!accHandleCCCD) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Không tìm thấy tài khoản với CCCD này', message)
     }
 
     // Tìm kỳ thi
-    const exam = Exams.find(e =>
+    const examHandle = Exams.find(e =>
       e.TenKyThi?.trim().toLowerCase() === tenKyThi.trim().toLowerCase()
     )
-    if (!exam) {
-      return Swal.fire('Không tìm thấy kỳ thi với tên này', '', 'warning')
+
+    if (!examHandle) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Không tìm thấy kỳ thi với tên này', message)
     }
 
     // Tìm kết quả
-    const r = Results.find(res =>
-      res.IDNguoiDung?._id === acc._id && res.IDKyThi?._id === exam._id
+    const resultHandle = Results.find(res =>
+      res.IDNguoiDung?._id === accHandleCCCD._id && res.IDKyThi?._id === examHandle._id
     )
-    if (!r) {
-      return Swal.fire('Không tìm thấy kết quả thi phù hợp', '', 'warning')
+
+    const LayChungChi = await API.get(`/certReceived/tat-ca-chung-chi-da-nhan/${accHandleCCCD._id}`)
+    const ChungChiDangThaoTac = LayChungChi.data.find(cc => cc.IDKetQua?._id === resultHandle._id)
+    const TrangThaiChungChi = ChungChiDangThaoTac?.TrangThai
+
+    if (!resultHandle) {
+      const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
+      showError('Không tìm thấy kết quả thi phù hợp', message)
     }
 
     // Cập nhật kết quả
     SetResult({
-      _id: r._id,
-      hoTen: acc.TenHienThi,
-      cccd: acc.CCCD,
-      tenKyThi: exam.TenKyThi,
-      buoi: exam.Buoi,
-      ngayThi: FormatDate(exam.NgayThi),
-      ngayCap: FormatDate(r.NgayCap),
-      trangThai: r.TrangThai,
-      diem1: r.Diem1,
-      diem2: r.Diem2,
-      diem3: r.Diem3,
-      diem4: r.Diem4,
-      diemTK: r.DiemTK,
-      KQ: r.KQ,
+      _id: ChungChiDangThaoTac._id,
+      hoTen: accHandleCCCD.TenHienThi,
+      cccd: accHandleCCCD.CCCD,
+      tenKyThi: examHandle.TenKyThi,
+      buoi: examHandle.Buoi,
+      ngayThi: FormatDate(examHandle.NgayThi),
+      ngayCap: FormatDate(resultHandle.NgayCap),
+      trangThai: TrangThaiChungChi,
+      diem1: resultHandle.Diem1,
+      diem2: resultHandle.Diem2,
+      diem3: resultHandle.Diem3,
+      diem4: resultHandle.Diem4,
+      diemTK: resultHandle.DiemTK,
+      KQ: resultHandle.KQ,
     })
   }
 
@@ -161,7 +183,7 @@ function KetQua() {
           value={tenKyThi}
           onChange={(e) => SetTenKyThi(e.target.value)}
         />
-        <Button variant="contained" onClick={XuLyTraCuuKetQua}>
+        <Button variant="contained" onClick={ResultSearchHandle}>
           Tra cứu
         </Button>
       </Box>
@@ -171,7 +193,7 @@ function KetQua() {
           <Typography variant="h6" gutterBottom>Kết quả:</Typography>
 
           <Grid container spacing={1}>
-            {RenderRow('Mã số', result._id)}
+            {RenderRow('Mã chứng chỉ', result._id)}
             {RenderRow('Họ tên', result.hoTen)}
             {RenderRow('CCCD', result.cccd)}
           </Grid>

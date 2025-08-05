@@ -41,6 +41,7 @@ function ProfileUser() {
   const [showExamModal, setShowExamModal] = useState(false)
 
   const [results, setResults] = useState([])
+  const [certReceived, setCertReceived] = useState([])
   const [coursesList, setCoursesList] = useState([])
   const [examsList, setExamsList] = useState([])
 
@@ -77,6 +78,8 @@ function ProfileUser() {
       const myResultsList = res.data.filter(r => r.IDNguoiDung?._id === userId)
       setResults(myResultsList)
       setShowCertModal(true)
+      const getCertReceived = await API.get(`/certReceived/tat-ca-chung-chi-da-nhan/${userId}`)
+      setCertReceived(getCertReceived.data)
     } catch (err) {
       console.error(err)
       Swal.fire('Lỗi', 'Không lấy được kết quả', 'error')
@@ -212,14 +215,14 @@ function ProfileUser() {
       <Dialog open={showCertModal} onClose={() => setShowCertModal(false)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>Chứng chỉ sở hữu</DialogTitle>
         <DialogContent dividers>
-          {results.length === 0
+          {certReceived.length === 0
             ? <Typography align="center">Chưa có</Typography>
             : <List>
-              {results.map(r => (
-                <ListItem key={r._id}>
+              {certReceived.map(cR => (
+                <ListItem key={cR._id}>
                   <ListItemText
-                    primary={`${r.IDKyThi?.IDChungChi?.TenChungChi} — ${r.IDKyThi?.TenKyThi}`}
-                    secondary={`Điểm: ${r.DiemTK}, Trạng thái: ${r.TrangThai}`}
+                    primary={`${cR?.IDKetQua?.IDKyThi?.IDChungChi?.TenChungChi} — ${cR?.IDKetQua?.IDKyThi?.TenKyThi}`}
+                    secondary={`Điểm: ${cR?.IDKetQua?.DiemTK}, Trạng thái: ${cR?.TrangThai}`}
                   />
                 </ListItem>
               ))}
@@ -239,7 +242,7 @@ function ProfileUser() {
                 <ListItem key={c._id}>
                   <ListItemText
                     primary={c.TenKhoaHoc}
-                    secondary={`Khai giảng: ${new Date(c.NgayKhaiGiang).toLocaleDateString()}`}
+                    secondary={`Khai giảng: ${new Date(c.NgayKhaiGiang).toLocaleDateString()} — Buổi: ${c.Buoi}`}
                   />
                 </ListItem>
               ))}

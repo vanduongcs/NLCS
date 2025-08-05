@@ -1,6 +1,4 @@
-import express from 'express'
 import mongoose from 'mongoose'
-import cors from 'cors'
 import AccountHistory from '../models/AccountHistory.js'
 
 const getAccountHistory = async (req, res) => {
