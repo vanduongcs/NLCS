@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import TableCustome from '../Table/TableCustome.jsx';
-import FieldCustome from '../FieldCustome/FieldCustome.jsx';
+import { useState, useEffect } from 'react'
+import Box from '@mui/material/Box'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import IconButton from '@mui/material/IconButton'
+import Button from '@mui/material/Button'
+import CloseIcon from '@mui/icons-material/Close'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import TableCustome from '../Table/TableCustome.jsx'
+import FieldCustome from '../FieldCustome/FieldCustome.jsx'
 
 function RelatedDataModal({
   open,
@@ -24,62 +24,62 @@ function RelatedDataModal({
   onDelete,
   onUpdateOptions
 }) {
-  const [subModalOpen, setSubModalOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState('');
-  const [columnResetKey, setColumnResetKey] = useState(0);
+  const [subModalOpen, setSubModalOpen] = useState(false)
+  const [selectedId, setSelectedId] = useState('')
+  const [columnResetKey, setColumnResetKey] = useState(0)
 
   // Reset key khi modal mở
   useEffect(() => {
     if (open) {
-      setColumnResetKey(prev => prev + 1);
+      setColumnResetKey(prev => prev + 1)
       // Reset selected ID khi mở modal
-      setSelectedId('');
+      setSelectedId('')
     }
-  }, [open, columns]);
+  }, [open, columns])
 
   // Xác định options dựa vào type và các collection đã có
-  let label = '';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  let label = ''
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
   if (type === 'KhoaHocDaThamGia') {
-    label = 'Chọn khóa học';
+    label = 'Chọn khóa học'
   }
   else if (type === 'KyThiDaThamGia') {
-    label = 'Chọn kỳ thi';
+    label = 'Chọn kỳ thi'
   }
   else if (type === 'ChungChiDaNhan') {
-    label = 'Chọn chứng chỉ';
+    label = 'Chọn chứng chỉ'
   }
   else if (type === 'IDTaiKhoan') {
-    label = 'Chọn tài khoản';
+    label = 'Chọn tài khoản'
   }
 
   const handleAddClick = () => {
-    setSelectedId('');
-    setSubModalOpen(true);
-  };
+    setSelectedId('')
+    setSubModalOpen(true)
+  }
 
   const handleSubModalClose = () => {
-    setSubModalOpen(false);
-    setSelectedId('');
-  };
+    setSubModalOpen(false)
+    setSelectedId('')
+  }
 
   const handleAddConfirm = async () => {
     if (selectedId) {
       try {
-        await onAdd(dataNeeded, type, selectedId);
+        await onAdd(dataNeeded, type, selectedId)
         // Gọi callback để cập nhật options
         if (onUpdateOptions) {
-          onUpdateOptions(type, selectedId);
+          onUpdateOptions(type, selectedId)
         }
         // Không đóng modal con 
-        setSelectedId(''); // Reset selected value để có thể chọn option khác
+        setSelectedId('') // Reset selected value để có thể chọn option khác
       } catch (error) {
-        console.error('Lỗi khi thêm:', error);
+        console.error('Lỗi khi thêm:', error)
       }
     }
-  };
+  }
 
   return (
     <>
@@ -133,9 +133,9 @@ function RelatedDataModal({
                         {value}
                       </Box>
                     )
-                  };
+                  }
                 }
-                return col;
+                return col
               }),
               // Chỉ hiển thị cột actions khi không phải là LichSu
               ...(type !== 'LichSu' ? [{
@@ -187,7 +187,7 @@ function RelatedDataModal({
         </Dialog>
       )}
     </>
-  );
+  )
 }
 
-export default RelatedDataModal;
+export default RelatedDataModal

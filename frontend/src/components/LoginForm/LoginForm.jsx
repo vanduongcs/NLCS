@@ -44,12 +44,12 @@ function LoginForm() {
         title: 'Đăng nhập thành công',
         confirmButtonText: 'Đóng',
         confirmButtonColor: '#1976d2'
-      });
+      })
 
       if (jwtDecode(token).Loai === 'admin') {
-        navigate('/quan-ly-chung-chi');
+        navigate('/quan-ly-chung-chi')
       } else {
-        navigate('/trang-chu');
+        navigate('/trang-chu')
       }
     } catch (error) {
       Swal.fire({

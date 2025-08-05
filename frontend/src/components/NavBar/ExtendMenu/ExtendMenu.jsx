@@ -19,7 +19,7 @@ function ExtendMenu({ isAdmin }) {
   const [open, setOpen] = useState(false)
 
   const openDrawer = (newOpen) => () => {
-    setOpen(newOpen);
+    setOpen(newOpen)
   }
 
   let Items = []

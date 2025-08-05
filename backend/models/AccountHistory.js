@@ -29,7 +29,7 @@ const AccountHistorySchema = new mongoose.Schema({
       }
     }]
   }]
-});
+})
 
 
 const AccountHistory = mongoose.model('AccountHistory', AccountHistorySchema)

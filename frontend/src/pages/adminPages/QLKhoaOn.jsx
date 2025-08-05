@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
-import API from '../../api.jsx';
-import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx';
-import CourseForm from '../../components/Form/CourseForm.jsx';
+import { useState, useEffect } from 'react'
+import Swal from 'sweetalert2'
+import API from '../../api.jsx'
+import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
+import CourseForm from '../../components/Form/CourseForm.jsx'
 
 import HistoryIcon from '@mui/icons-material/History'
 import IconButton from '@mui/material/IconButton'
@@ -14,35 +14,35 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 
 function QLKhoaOn() {
   // Constants
-  const routeAddress = 'course';
-  const pageContent = 'khóa học';
-  const funcAdd = 'them-khoa-on';
-  const funcFind = 'tim-khoa-on';
-  const funcFindAll = 'tat-ca-khoa-on';
-  const funcUpdate = 'cap-nhat-khoa-on';
-  const funcDelete = 'xoa-khoa-on';
+  const routeAddress = 'course'
+  const pageContent = 'khóa học'
+  const funcAdd = 'them-khoa-on'
+  const funcFind = 'tim-khoa-on'
+  const funcFindAll = 'tat-ca-khoa-on'
+  const funcUpdate = 'cap-nhat-khoa-on'
+  const funcDelete = 'xoa-khoa-on'
   const historyAddress = 'courseHistory'
 
   // State
-  const [EditingCourse, SetEditingCourse] = useState(null);
-  const [Courses, SetCourses] = useState([]);
-  const [Certificates, SetCertificates] = useState([]);
-  const [currentCourseId, setCurrentCourseId] = useState(null);
+  const [EditingCourse, SetEditingCourse] = useState(null)
+  const [Courses, SetCourses] = useState([])
+  const [Certificates, SetCertificates] = useState([])
+  const [currentCourseId, setCurrentCourseId] = useState(null)
 
-  const [CertificateID, SetCertificateID] = useState('');
-  const [LichHoc, SetLichHoc] = useState('');
-  const [NgayKhaiGiang, SetNgayKhaiGiang] = useState('');
-  const [NgayKetThuc, SetNgayKetThuc] = useState('');
-  const [Buoi, SetBuoi] = useState('');
-  const [SiSoToiDa, SetSiSoToiDa] = useState('');
+  const [CertificateID, SetCertificateID] = useState('')
+  const [LichHoc, SetLichHoc] = useState('')
+  const [NgayKhaiGiang, SetNgayKhaiGiang] = useState('')
+  const [NgayKetThuc, SetNgayKetThuc] = useState('')
+  const [Buoi, SetBuoi] = useState('')
+  const [SiSoToiDa, SetSiSoToiDa] = useState('')
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalData, setModalData] = useState([])
   const [modalColumns, setModalColumns] = useState([])
-  const [modalType, setModalType] = useState('LichSu');
-  const [modalOptions, setModalOptions] = useState([]);
-  const [accounts, setAccounts] = useState([]); // Thêm state này để lưu danh sách tài khoản
+  const [modalType, setModalType] = useState('LichSu')
+  const [modalOptions, setModalOptions] = useState([])
+  const [accounts, setAccounts] = useState([]) // Thêm state này để lưu danh sách tài khoản
 
   const formStates = {
     CertificateID, SetCertificateID,
@@ -51,7 +51,7 @@ function QLKhoaOn() {
     NgayKetThuc, SetNgayKetThuc,
     Buoi, SetBuoi,
     SiSoToiDa, SetSiSoToiDa
-  };
+  }
 
   // Utility functions
   const showError = (message) => {
@@ -61,8 +61,8 @@ function QLKhoaOn() {
       text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
-    });
-  };
+    })
+  }
 
   const createCourseData = () => ({
     IDChungChi: CertificateID,
@@ -71,34 +71,34 @@ function QLKhoaOn() {
     NgayKetThuc: new Date(NgayKetThuc),
     Buoi,
     SiSoToiDa: Number(SiSoToiDa) || undefined
-  });
+  })
 
   const resetForm = () => {
-    SetLichHoc('');
-    SetNgayKhaiGiang('');
-    SetNgayKetThuc('');
-    SetBuoi('');
-    SetSiSoToiDa('');
-    SetEditingCourse(null);
-  };
+    SetLichHoc('')
+    SetNgayKhaiGiang('')
+    SetNgayKetThuc('')
+    SetBuoi('')
+    SetSiSoToiDa('')
+    SetEditingCourse(null)
+  }
 
   const fetchCourses = async () => {
     try {
-      const res = await API.get(`/${routeAddress}/${funcFindAll}`);
+      const res = await API.get(`/${routeAddress}/${funcFindAll}`)
       const coursesWForeignData = res.data.map((course) => {
-        const id = course.IDChungChi?._id;
-        const cert = Certificates.find(c => c._id === id);
+        const id = course.IDChungChi?._id
+        const cert = Certificates.find(c => c._id === id)
         return {
           ...course,
           TenChungChi: cert?.TenChungChi || ''
-        };
-      });
-      SetCourses(coursesWForeignData);
+        }
+      })
+      SetCourses(coursesWForeignData)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Lỗi khi tải danh sách khóa học', message)
     }
-  };
+  }
 
   const fetchData = async () => {
     try {
@@ -106,25 +106,25 @@ function QLKhoaOn() {
         API.get('/certificate/tat-ca-chung-chi'),
         API.get(`/${routeAddress}/${funcFindAll}`),
         API.get('/account/tat-ca-tai-khoan')
-      ]);
+      ])
 
-      SetCertificates(certificatesRes.data);
-      setAccounts(accountsRes.data); // Lưu danh sách tài khoản
+      SetCertificates(certificatesRes.data)
+      setAccounts(accountsRes.data) // Lưu danh sách tài khoản
 
       const coursesWForeignData = coursesRes.data.map((course) => {
-        const id = course.IDChungChi?._id;
-        const cert = certificatesRes.data.find(c => c._id === id);
+        const id = course.IDChungChi?._id
+        const cert = certificatesRes.data.find(c => c._id === id)
         return {
           ...course,
           TenChungChi: cert?.TenChungChi || ''
-        };
-      });
-      SetCourses(coursesWForeignData);
+        }
+      })
+      SetCourses(coursesWForeignData)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Lỗi khi tải dữ liệu', message)
     }
-  };
+  }
 
   // Convert từ id sang tên hiển thị
   const getDisplayNameById = (id, type) => {
@@ -188,45 +188,45 @@ function QLKhoaOn() {
 
   // Hàm mở modal lịch sử
   const handleOpenModal = (type, row) => {
-    setModalType(type);
+    setModalType(type)
     if (type === 'LichSu') {
-      setModalTitle('Lịch sử thay đổi');
+      setModalTitle('Lịch sử thay đổi')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
         { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
         { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
         { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
-      ]);
+      ])
       fetchCollectionHistory({
         apiPath: '/courseHistory/tim-lich-su-khoa-hoc',
         id: row._id,
         getFieldDisplayName,
         formatHistoryValue,
         setModalData
-      });
-      setModalOptions([]);
+      })
+      setModalOptions([])
     } else if (type === 'IDTaiKhoan') {
-      setCurrentCourseId(row._id);
-      fetchRelatedData(row._id, row, type);
+      setCurrentCourseId(row._id)
+      fetchRelatedData(row._id, row, type)
     }
-    setModalOpen(true);
+    setModalOpen(true)
   }
 
   const fetchRelatedData = async (courseId, row, type) => {
     if (type === 'IDTaiKhoan') {
       // Lấy danh sách tài khoản của khóa học này
-      const course = Courses.find(c => c._id === courseId);
+      const course = Courses.find(c => c._id === courseId)
       if (!course) {
-        setModalData([]);
-        setModalColumns([]);
-        setModalOptions([]);
-        setModalTitle('Danh sách học viên');
-        return;
+        setModalData([])
+        setModalColumns([])
+        setModalOptions([])
+        setModalTitle('Danh sách học viên')
+        return
       }
       // Lấy thông tin tài khoản từ accounts
       const dsHocVien = (course.IDTaiKhoan || []).map(accId => {
-        const acc = accounts.find(a => a._id === accId);
+        const acc = accounts.find(a => a._id === accId)
         return {
           _id: acc?._id || accId,
           TenHienThi: acc?.TenHienThi || accId,
@@ -234,39 +234,39 @@ function QLKhoaOn() {
           SDT: acc?.SDT || '',
           CCCD: acc?.CCCD || ''
         }
-      });
-      setModalData(dsHocVien);
+      })
+      setModalData(dsHocVien)
       setModalColumns([
         { key: 'TenHienThi', label: 'Tên học viên' },
         { key: 'TenTaiKhoan', label: 'Tài khoản' },
         { key: 'SDT', label: 'Số điện thoại' },
         { key: 'CCCD', label: 'CCCD' }
-      ]);
+      ])
       // Tìm các tài khoản chưa có trong khóa học này để làm options thêm
-      const accountsListRes = await API.get('/account/tat-ca-tai-khoan');
-      const accountsList = accountsListRes.data;
+      const accountsListRes = await API.get('/account/tat-ca-tai-khoan')
+      const accountsList = accountsListRes.data
       const accountNotInCourse = accountsList.filter(acc =>
         !(course.IDTaiKhoan || []).map(id => String(id)).includes(String(acc._id))
-      );
+      )
       setModalOptions(accountNotInCourse.map(a => ({
         value: a._id,
         label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })));
-      setModalTitle('Danh sách học viên');
+      })))
+      setModalTitle('Danh sách học viên')
     }
-  };
+  }
 
   // Event handlers
   const handleAdd = async () => {
     try {
-      const response = await API.post(`/${routeAddress}/${funcAdd}`, createCourseData());
-      await fetchCourses();
-      resetForm();
+      const response = await API.post(`/${routeAddress}/${funcAdd}`, createCourseData())
+      await fetchCourses()
+      resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Không thể thêm khóa học', message)
     }
-  };
+  }
 
   const handleDelete = async (id) => {
     Swal.fire({
@@ -281,57 +281,57 @@ function QLKhoaOn() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
-          await fetchCourses();
+          const response = await API.delete(`/${routeAddress}/${funcDelete}/${id}`)
+          await fetchCourses()
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
           showError('Không thể xóa khóa học', message)
         }
       }
-    });
-  };
+    })
+  }
 
   const handleEdit = (row) => {
-    SetCertificateID(row.IDChungChi?._id || row.IDChungChi);
-    SetLichHoc(row.LichHoc);
-    SetNgayKhaiGiang(new Date(row.NgayKhaiGiang).toISOString().slice(0, 10));
-    SetNgayKetThuc(new Date(row.NgayKetThuc).toISOString().slice(0, 10));
-    SetBuoi(row.Buoi);
-    SetSiSoToiDa(row.SiSoToiDa?.toString());
-    SetEditingCourse(row._id);
-  };
+    SetCertificateID(row.IDChungChi?._id || row.IDChungChi)
+    SetLichHoc(row.LichHoc)
+    SetNgayKhaiGiang(new Date(row.NgayKhaiGiang).toISOString().slice(0, 10))
+    SetNgayKetThuc(new Date(row.NgayKetThuc).toISOString().slice(0, 10))
+    SetBuoi(row.Buoi)
+    SetSiSoToiDa(row.SiSoToiDa?.toString())
+    SetEditingCourse(row._id)
+  }
 
   const handleUpdate = async () => {
     try {
-      console.log('course data:', createCourseData());
-      await API.put(`/${routeAddress}/${funcUpdate}/${EditingCourse}`, createCourseData());
-      await fetchCourses();
-      resetForm();
+      console.log('course data:', createCourseData())
+      await API.put(`/${routeAddress}/${funcUpdate}/${EditingCourse}`, createCourseData())
+      await fetchCourses()
+      resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Không thể cập nhật khóa học', message)
     }
-  };
+  }
 
   const handleAddRelated = async (courseId, type, accountId) => {
-    if (type !== 'IDTaiKhoan') return;
+    if (type !== 'IDTaiKhoan') return
 
     try {
       // Lấy thông tin course hiện tại
-      const courseRes = await API.get(`/course/${funcFind}/${courseId}`);
-      const courseData = courseRes.data;
+      const courseRes = await API.get(`/course/${funcFind}/${courseId}`)
+      const courseData = courseRes.data
 
       // Lấy danh sách IDTaiKhoan hiện tại, đảm bảo không null/undefined
-      const currentAccountIds = courseData.IDTaiKhoan || [];
+      const currentAccountIds = courseData.IDTaiKhoan || []
 
       // Kiểm tra xem tài khoản đã có trong danh sách chưa
       if (currentAccountIds.includes(accountId)) {
-        showError('Không thể thêm học viên', 'Học viên đã đăng ký vào khóa học này trước đó');
-        return;
+        showError('Không thể thêm học viên', 'Học viên đã đăng ký vào khóa học này trước đó')
+        return
       }
 
       // Thêm accountId vào danh sách
-      const updatedAccountIds = [...currentAccountIds, accountId];
+      const updatedAccountIds = [...currentAccountIds, accountId]
 
       // Cập nhật course với danh sách IDTaiKhoan mới
       await API.put(`/${routeAddress}/${funcUpdate}/${courseId}`, {
@@ -342,19 +342,19 @@ function QLKhoaOn() {
         NgayKetThuc: courseData.NgayKetThuc,
         Buoi: courseData.Buoi,
         SiSoToiDa: courseData.SiSoToiDa
-      });
+      })
 
       // Refresh dữ liệu courses trong state
-      await fetchCourses();
+      await fetchCourses()
 
       // Fetch lại dữ liệu accounts để đảm bảo có dữ liệu mới nhất
-      const accountsRes = await API.get('/account/tat-ca-tai-khoan');
-      const updatedAccounts = accountsRes.data;
-      setAccounts(updatedAccounts); // Cập nhật state accounts
+      const accountsRes = await API.get('/account/tat-ca-tai-khoan')
+      const updatedAccounts = accountsRes.data
+      setAccounts(updatedAccounts) // Cập nhật state accounts
 
       // Cập nhật modal ngay lập tức với dữ liệu mới
       const dsHocVien = updatedAccountIds.map(accId => {
-        const acc = updatedAccounts.find(a => a._id === accId);
+        const acc = updatedAccounts.find(a => a._id === accId)
         return {
           _id: acc?._id || accId,
           TenHienThi: acc?.TenHienThi || accId,
@@ -362,32 +362,32 @@ function QLKhoaOn() {
           SDT: acc?.SDT || '',
           CCCD: acc?.CCCD || ''
         }
-      });
+      })
 
-      setModalData(dsHocVien);
+      setModalData(dsHocVien)
 
       // Cập nhật options (loại bỏ account vừa thêm)
       const accountNotInCourse = updatedAccounts.filter(acc =>
         !updatedAccountIds.includes(acc._id)
-      );
+      )
       setModalOptions(accountNotInCourse.map(a => ({
         value: a._id,
         label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })));
+      })))
 
     } catch (error) {
-      const message = error.response?.data?.message || 'Lỗi khi thêm học viên vào khóa học.';
-      showError(message);
+      const message = error.response?.data?.message || 'Lỗi khi thêm học viên vào khóa học.'
+      showError(message)
     }
-  };
+  }
 
   const handleDeleteRelated = async (row, courseId, type) => {
-    if (type !== 'IDTaiKhoan') return;
+    if (type !== 'IDTaiKhoan') return
     try {
-      const course = Courses.find(c => c._id === courseId);
-      if (!course) return;
+      const course = Courses.find(c => c._id === courseId)
+      if (!course) return
 
-      const newList = (course.IDTaiKhoan || []).filter(id => id !== row._id);
+      const newList = (course.IDTaiKhoan || []).filter(id => id !== row._id)
 
       await API.put(`/course/${funcUpdate}/${courseId}`, {
         ...course,
@@ -398,13 +398,13 @@ function QLKhoaOn() {
         NgayKetThuc: course.NgayKetThuc,
         Buoi: course.Buoi,
         SiSoToiDa: course.SiSoToiDa
-      });
+      })
 
-      await fetchCourses();
+      await fetchCourses()
 
       // Cập nhật modal ngay lập tức
       const dsHocVien = newList.map(accId => {
-        const acc = accounts.find(a => a._id === accId);
+        const acc = accounts.find(a => a._id === accId)
         return {
           _id: acc?._id || accId,
           TenHienThi: acc?.TenHienThi || accId,
@@ -412,35 +412,35 @@ function QLKhoaOn() {
           SDT: acc?.SDT || '',
           CCCD: acc?.CCCD || ''
         }
-      });
+      })
 
-      setModalData(dsHocVien);
+      setModalData(dsHocVien)
 
       // Cập nhật options (thêm lại account vừa xóa)
       const accountNotInCourse = accounts.filter(acc =>
         !newList.includes(acc._id)
-      );
+      )
       setModalOptions(accountNotInCourse.map(a => ({
         value: a._id,
         label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })));
+      })))
 
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Lỗi khi xóa học viên', message)
     }
-  };
+  }
 
   // Thêm hàm handleUpdateModalOptions
   const handleUpdateModalOptions = (type, addedId) => {
     if (type === 'IDTaiKhoan') {
-      setModalOptions(prev => prev.filter(option => option.value !== addedId));
+      setModalOptions(prev => prev.filter(option => option.value !== addedId))
     }
-  };
+  }
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   // Table configuration
   const columns = [
@@ -473,7 +473,7 @@ function QLKhoaOn() {
     },
     { label: 'Sửa', key: 'editButton', align: 'center', isAction: 'edit' },
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
-  ];
+  ]
 
   const columnsCanEdit = [
     {
@@ -503,7 +503,7 @@ function QLKhoaOn() {
       ]
     },
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' }
-  ];
+  ]
 
   return (
     <>
@@ -535,7 +535,7 @@ function QLKhoaOn() {
         onUpdateOptions={handleUpdateModalOptions}
       />
     </>
-  );
+  )
 }
 
-export default QLKhoaOn;
+export default QLKhoaOn

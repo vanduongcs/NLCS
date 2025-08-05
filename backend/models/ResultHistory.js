@@ -29,7 +29,7 @@ const ResultHistorySchema = new mongoose.Schema({
       }
     }]
   }]
-});
+})
 
 
 const ResultHistory = mongoose.model('ResultHistory', ResultHistorySchema)

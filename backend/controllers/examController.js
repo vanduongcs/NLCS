@@ -13,11 +13,11 @@ const formatDate = (date) => {
 
 // Hàm tìm số thứ tự tiếp theo cho kỳ thi
 const findNextExamNumber = async (IDChungChi, NgayThi, Buoi, excludeId = null) => {
-  const certificate = await Certificate.findById(IDChungChi);
-  const baseName = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}`;
+  const certificate = await Certificate.findById(IDChungChi)
+  const baseName = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}`
 
   // Tìm tất cả kỳ thi có cùng pattern
-  const examDate = new Date(NgayThi).setHours(0, 0, 0, 0);
+  const examDate = new Date(NgayThi).setHours(0, 0, 0, 0)
   const query = {
     IDChungChi: IDChungChi,
     Buoi: Buoi,
@@ -25,26 +25,26 @@ const findNextExamNumber = async (IDChungChi, NgayThi, Buoi, excludeId = null) =
       $gte: new Date(examDate),
       $lt: new Date(examDate + 24 * 60 * 60 * 1000)
     }
-  };
-
-  if (excludeId) {
-    query._id = { $ne: excludeId };
   }
 
-  const existingExams = await Exam.find(query).select('TenKyThi');
+  if (excludeId) {
+    query._id = { $ne: excludeId }
+  }
+
+  const existingExams = await Exam.find(query).select('TenKyThi')
 
   // Lấy các số thứ tự đã sử dụng
   const usedNumbers = existingExams
     .map(exam => {
-      const match = exam.TenKyThi.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d+)$`));
-      return match ? parseInt(match[1]) : null;
+      const match = exam.TenKyThi.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d+)$`))
+      return match ? parseInt(match[1]) : null
     })
-    .filter(num => num !== null);
+    .filter(num => num !== null)
 
   // Tìm số lớn nhất và trả về số tiếp theo
-  const maxNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) : 0;
-  return maxNumber + 1;
-};
+  const maxNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) : 0
+  return maxNumber + 1
+}
 
 // Thêm đợt thi
 const addExam = async (req, res) => {
@@ -61,8 +61,8 @@ const addExam = async (req, res) => {
     if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.', error: 'SAI_MIEN_GIA_TRI' })
 
     // Tìm số thứ tự tiếp theo cho kỳ thi
-    const nextNumber = await findNextExamNumber(IDChungChi, NgayThi, Buoi);
-    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}${nextNumber}`;
+    const nextNumber = await findNextExamNumber(IDChungChi, NgayThi, Buoi)
+    const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}${nextNumber}`
 
     const newExam = new Exam({
       IDChungChi,
@@ -87,7 +87,7 @@ const addExam = async (req, res) => {
           DLSau: null
         }]
       }]
-    });
+    })
 
     await history.save()
     res.status(201).json({ message: 'Thêm đợt thi thành công' })
@@ -222,7 +222,7 @@ const updateExam = async (req, res) => {
     }
 
     // Kiểm tra xem có cần cập nhật tên kỳ thi không
-    const needsNameUpdate = NgayThi !== undefined || Buoi !== undefined || IDChungChi !== undefined;
+    const needsNameUpdate = NgayThi !== undefined || Buoi !== undefined || IDChungChi !== undefined
 
     if (needsNameUpdate) {
       const finalIDChungChi = IDChungChi || oldExam.IDChungChi
@@ -231,8 +231,8 @@ const updateExam = async (req, res) => {
       const certificate = await Certificate.findById(finalIDChungChi)
 
       // Tìm số thứ tự tiếp theo cho kỳ thi (loại trừ kỳ thi hiện tại)
-      const nextNumber = await findNextExamNumber(finalIDChungChi, finalNgayThi, finalBuoi, examId);
-      updateData.TenKyThi = `${certificate.TenChungChi}-${formatDate(finalNgayThi)}-${finalBuoi.charAt(0).toUpperCase()}${nextNumber}`;
+      const nextNumber = await findNextExamNumber(finalIDChungChi, finalNgayThi, finalBuoi, examId)
+      updateData.TenKyThi = `${certificate.TenChungChi}-${formatDate(finalNgayThi)}-${finalBuoi.charAt(0).toUpperCase()}${nextNumber}`
     }
 
     // Cập nhật đợt thi
@@ -258,7 +258,7 @@ const updateExam = async (req, res) => {
                 TruongDLThayDoi: field,
                 DLTruoc: oldValue,
                 DLSau: newValue
-              });
+              })
             }
           }
           // So sánh ObjectId
@@ -267,7 +267,7 @@ const updateExam = async (req, res) => {
               TruongDLThayDoi: field,
               DLTruoc: oldValue,
               DLSau: newValue
-            });
+            })
           }
         }
       })
@@ -319,9 +319,9 @@ const deleteExam = async (req, res) => {
     )
 
     // Xóa lịch sử
-    const history = await ExamHistory.findOne({ IDKyThi: id });
+    const history = await ExamHistory.findOne({ IDKyThi: id })
     if (history) {
-      await history.deleteOne();
+      await history.deleteOne()
     }
 
     // Xóa đợt thi

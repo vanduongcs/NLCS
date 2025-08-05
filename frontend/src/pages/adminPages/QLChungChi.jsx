@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx';
-import CertificateForm from '../../components/Form/CertificateForm.jsx';
+import { useState, useEffect } from 'react'
+import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
+import CertificateForm from '../../components/Form/CertificateForm.jsx'
 import HistoryIcon from '@mui/icons-material/History'
 import IconButton from '@mui/material/IconButton'
-import API from '../../api.jsx';
-import Swal from 'sweetalert2';
+import API from '../../api.jsx'
+import Swal from 'sweetalert2'
 
 import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetchCollectionHistory.js'
 import RelatedDataModal from '../../components/Modal/RelatedDataModal.jsx'
@@ -20,16 +20,16 @@ function QLChungChi() {
   const historyAddress = 'certificateHistory'
 
   // State
-  const [editingCertificate, setEditingCertificate] = useState(null);
+  const [editingCertificate, setEditingCertificate] = useState(null)
 
-  const [certificates, setCertificates] = useState([]);
+  const [certificates, setCertificates] = useState([])
 
-  const [TenChungChi, SetTenChungChi] = useState('');
-  const [Loai, SetLoai] = useState('');
-  const [LePhiThi, SetLePhiThi] = useState('');
-  const [HocPhi, SetHocPhi] = useState('');
-  const [ThoiHan, SetThoiHan] = useState('');
-  const [DiemToiThieu, SetDiemToiThieu] = useState('');
+  const [TenChungChi, SetTenChungChi] = useState('')
+  const [Loai, SetLoai] = useState('')
+  const [LePhiThi, SetLePhiThi] = useState('')
+  const [HocPhi, SetHocPhi] = useState('')
+  const [ThoiHan, SetThoiHan] = useState('')
+  const [DiemToiThieu, SetDiemToiThieu] = useState('')
   const [DiemToiDa, SetDiemToiDa] = useState('')
 
   const [modalOpen, setModalOpen] = useState(false)
@@ -45,7 +45,7 @@ function QLChungChi() {
     ThoiHan, SetThoiHan,
     DiemToiThieu, SetDiemToiThieu,
     DiemToiDa, SetDiemToiDa
-  };
+  }
 
   const createCertificateData = () => ({
     TenChungChi,
@@ -55,21 +55,21 @@ function QLChungChi() {
     ThoiHan: Number(ThoiHan),
     DiemToiThieu: Number(DiemToiThieu),
     DiemToiDa: Number(DiemToiDa)
-  });
+  })
 
   const resetForm = () => {
-    SetTenChungChi('');
-    SetDiemToiThieu('');
+    SetTenChungChi('')
+    SetDiemToiThieu('')
     SetDiemToiDa('')
-    setEditingCertificate(null);
-  };
+    setEditingCertificate(null)
+  }
 
   // API functions
   const fetchCertificates = () => {
     API.get(`/${routeAddress}/${funcFindAll}`)
       .then(res => setCertificates(res.data))
-      .catch(() => showError('Không thể tải danh sách chứng chỉ'));
-  };
+      .catch(() => showError('Không thể tải danh sách chứng chỉ'))
+  }
 
   const handleOpenModal = (type, row) => {
     if (type === 'LichSu') {
@@ -94,13 +94,13 @@ function QLChungChi() {
 
   const handleAdd = async () => {
     try {
-      await API.post(`/${routeAddress}/${funcAdd}`, createCertificateData());
-      fetchCertificates();
-      resetForm();
+      await API.post(`/${routeAddress}/${funcAdd}`, createCertificateData())
+      fetchCertificates()
+      resetForm()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể thêm chứng chỉ');
+      showError(error.response?.data?.message || 'Không thể thêm chứng chỉ')
     }
-  };
+  }
 
   const handleDelete = async (id) => {
     Swal.fire({
@@ -115,35 +115,35 @@ function QLChungChi() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await API.delete(`/${routeAddress}/${funcDelete}/${id}`);
-          fetchCertificates();
+          await API.delete(`/${routeAddress}/${funcDelete}/${id}`)
+          fetchCertificates()
         } catch (error) {
-          showError(error.response?.data?.message || 'Không thể xóa chứng chỉ');
+          showError(error.response?.data?.message || 'Không thể xóa chứng chỉ')
         }
       }
-    });
-  };
+    })
+  }
 
   const handleEdit = (row) => {
-    setEditingCertificate(row._id);
-    SetTenChungChi(row.TenChungChi);
-    SetLoai(row.Loai);
-    SetLePhiThi(row.LePhiThi);
-    SetHocPhi(row.HocPhi);
-    SetThoiHan(row.ThoiHan);
-    SetDiemToiThieu(row.DiemToiThieu);
+    setEditingCertificate(row._id)
+    SetTenChungChi(row.TenChungChi)
+    SetLoai(row.Loai)
+    SetLePhiThi(row.LePhiThi)
+    SetHocPhi(row.HocPhi)
+    SetThoiHan(row.ThoiHan)
+    SetDiemToiThieu(row.DiemToiThieu)
     SetDiemToiDa(row.DiemToiDa)
-  };
+  }
 
   const handleUpdate = async () => {
     try {
-      await API.put(`/${routeAddress}/${funcUpdate}/${editingCertificate}`, createCertificateData());
-      fetchCertificates();
-      resetForm();
+      await API.put(`/${routeAddress}/${funcUpdate}/${editingCertificate}`, createCertificateData())
+      fetchCertificates()
+      resetForm()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể cập nhật chứng chỉ');
+      showError(error.response?.data?.message || 'Không thể cập nhật chứng chỉ')
     }
-  };
+  }
 
   // Hàm showError có thể được cập nhật để linh hoạt hơn
   const showError = (message) => {
@@ -153,8 +153,8 @@ function QLChungChi() {
       text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
-    });
-  };
+    })
+  }
 
   // Hàm chuyển tên trường dữ liệu sang tiếng Việt
   const getFieldDisplayName = (field) => {
@@ -178,8 +178,8 @@ function QLChungChi() {
   }
 
   useEffect(() => {
-    fetchCertificates();
-  }, []);
+    fetchCertificates()
+  }, [])
 
   // Table configuration
   const columns = [
@@ -202,7 +202,7 @@ function QLChungChi() {
     },
     { label: 'Sửa', align: 'center', isAction: 'edit' },
     { label: 'Xóa', align: 'center', isAction: 'delete' }
-  ];
+  ]
 
   const columnsCanEdit = [
     {
@@ -218,7 +218,7 @@ function QLChungChi() {
     { label: 'Thời hạn', key: 'ThoiHan', type: 'number' },
     { label: 'Điểm tối thiểu', key: 'DiemToiThieu', type: 'number' },
     { label: 'Điểm tối đa', key: 'DiemToiDa', type: 'number' }
-  ];
+  ]
 
   return (
     <>
@@ -250,7 +250,7 @@ function QLChungChi() {
         onUpdateOptions={null}
       />
     </>
-  );
+  )
 }
 
-export default QLChungChi;
+export default QLChungChi

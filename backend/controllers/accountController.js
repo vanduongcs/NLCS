@@ -56,7 +56,7 @@ const register = async (req, res) => {
           DLSau: null
         }]
       }]
-    });
+    })
 
     await history.save()
 
@@ -254,7 +254,7 @@ const updateAccount = async (req, res) => {
             TruongDLThayDoi: field,
             DLTruoc: oldAccount[field],
             DLSau: updatedAccount[field]
-          });
+          })
         }
       })
       if (chiTietThayDoi.length > 0) {
@@ -287,9 +287,9 @@ const deleteAccount = async (req, res) => {
       return res.status(400).json({ message: 'Không thể xóa tài khoản còn liên kết dữ liệu' })
     }
 
-    const history = await AccountHistory.findOne({ IDTaiKhoan: id });
+    const history = await AccountHistory.findOne({ IDTaiKhoan: id })
     if (history) {
-      await history.deleteOne();
+      await history.deleteOne()
     }
     await Account.findByIdAndDelete(id)
     res.status(200).json({ message: 'Xóa tài khoản thành công' })

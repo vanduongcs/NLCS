@@ -29,7 +29,7 @@ const CourseHistorySchema = new mongoose.Schema({
       }
     }]
   }]
-});
+})
 
 
 const CourseHistory = mongoose.model('CourseHistory', CourseHistorySchema)

@@ -29,7 +29,7 @@ const CertificateHistorySchema = new mongoose.Schema({
       }
     }]
   }]
-});
+})
 
 
 const CertificateHistory = mongoose.model('CertificateHistory', CertificateHistorySchema)

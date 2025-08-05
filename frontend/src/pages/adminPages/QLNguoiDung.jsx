@@ -10,7 +10,7 @@ import RelatedDataModal from '../../components/Modal/RelatedDataModal.jsx'
 import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetchCollectionHistory.js'
 
 import ListAltIcon from '@mui/icons-material/ListAlt'
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
 
 
 function QLNguoiDung() {

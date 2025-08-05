@@ -156,7 +156,15 @@ function ProfileUser() {
         <MenuItem onClick={handleClose} sx={{ display: 'flex', gap: 1 }}>
           <MilitaryTechIcon /><Typography>TK: <strong>{UserTenTK}</strong></Typography>
         </MenuItem>
-        <MenuItem onClick={() => { handleClose(); setShowModal(true) }} sx={{ display: 'flex', gap: 1 }}>
+        <MenuItem
+          onClick={() => {
+            handleClose()
+            setShowModal(true)
+          }} sx={{
+            display: 'flex', gap: 1
+
+          }}
+        >
           <SettingsIcon />Chi tiết
         </MenuItem>
         <Divider />
