@@ -101,8 +101,14 @@ function FieldCustome({ label, val, func, type = 'text', options = [] }) {
       label={label}
       value={val ?? ''}
       onChange={(e) => {
-        const newValue = type === 'number' ? Number(e.target.value) : e.target.value
-        func(newValue)
+        if (type === 'number') {
+          const inputValue = e.target.value
+          // Nếu input rỗng, giữ nguyên chuỗi rỗng thay vì chuyển thành 0
+          const newValue = inputValue === '' ? '' : Number(inputValue)
+          func(newValue)
+        } else {
+          func(e.target.value)
+        }
       }}
       type={type}
       sx={{ mt: 2 }}

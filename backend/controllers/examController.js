@@ -51,15 +51,34 @@ const addExam = async (req, res) => {
   try {
     const { IDChungChi, IDTaiKhoan = [], NgayThi, Buoi, SiSoToiDa } = req.body
 
-    // Kiểm tra xem chứng chỉ có tồn tại không
-    const certificate = await Certificate.findById(IDChungChi)
-    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' })
+    if (!IDChungChi) {
+      return res.status(400).json({ message: 'Vui lòng nhập chứng chỉ', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    let certificate = null
+    try {
+      certificate = await Certificate.findById(IDChungChi)
+    } catch (error) {
+      return res.status(400).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' })
+    }
+
+    if (!NgayThi) {
+      return res.status(400).json({ message: 'Vui lòng nhập ngày thi', error: 'SAI_MIEN_GIA_TRI' })
+    }
 
     // Kiểm tra ngày thi có nhỏ hơn ngày hiện tại không
     const today = new Date().setHours(0, 0, 0, 0)
     const examDate = new Date(NgayThi).setHours(0, 0, 0, 0)
     if (examDate < today) return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.', error: 'SAI_MIEN_GIA_TRI' })
 
+    if (!Buoi) {
+      return res.status(400).json({ message: 'Vui lòng nhập buổi thi', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!SiSoToiDa) {
+      return res.status(400).json({ message: 'Vui lòng nhập sĩ số tối đa', error: 'SAI_MIEN_GIA_TRI' })
+    }
+    
     // Tìm số thứ tự tiếp theo cho kỳ thi
     const nextNumber = await findNextExamNumber(IDChungChi, NgayThi, Buoi)
     const TenKyThi = `${certificate.TenChungChi}-${formatDate(NgayThi)}-${Buoi.charAt(0).toUpperCase()}${nextNumber}`

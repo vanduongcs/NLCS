@@ -50,11 +50,10 @@ function QLKetQua() {
   }
 
   // Utility functions
-  const showError = (title, message = 'Vui lòng thử lại sau.') => {
+  const showError = (message) => {
     Swal.fire({
       icon: 'error',
-      title,
-      text: message,
+      title: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
     })
@@ -165,7 +164,7 @@ function QLKetQua() {
       })
       .catch((error) => {
         const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-        showError('Lỗi khi thêm kết quả', message)
+        showError(message)
       })
   }
 
@@ -174,7 +173,7 @@ function QLKetQua() {
       .then(() => fetchResults())
       .catch((error) => {
         const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-        showError('Lỗi khi xóa kết quả', message)
+        showError(message)
       })
   }
 
@@ -190,10 +189,6 @@ function QLKetQua() {
 
   const handleUpdate = () => {
     const exam = exams.find(e => e._id === IDKyThi)
-    if (!IDNguoiDung || !exam) {
-      showError('Không tìm thấy tài khoản hoặc kỳ thi')
-      return
-    }
 
     API.put(`/${routeAddress}/${funcUpdate}/${editingResult}`, createResultData())
       .then(() => {
@@ -202,7 +197,7 @@ function QLKetQua() {
       })
       .catch((error) => {
         const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-        showError('Lỗi khi cập nhật kết quả', message)
+        showError(message)
       })
   }
 

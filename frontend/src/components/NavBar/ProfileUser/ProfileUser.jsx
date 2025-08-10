@@ -52,6 +52,10 @@ function ProfileUser() {
   // Mở profile
   const handleClick = async (e) => {
     setAnchorEl(e.currentTarget)
+    await fetchUserInfo()
+  }
+
+  const fetchUserInfo = async (retryCount = 0) => {
     try {
       const accountFound = await API.get(`http://localhost:2025/api/account/tim-tai-khoan/${jwtDecode(token).TenTaiKhoan}`)
       const user = accountFound.data
@@ -64,7 +68,23 @@ function ProfileUser() {
       SetUserMatKhau(user.MatKhau)
     } catch (err) {
       console.error('Lỗi khi gọi /tim-tai-khoan:', err)
-      Swal.fire('Lỗi', 'Không lấy được thông tin người dùng', 'error')
+      
+      // Check if it's a network error and we haven't exceeded retry limit
+      if ((err.isNetworkError || err.isTimeout || err.response?.status >= 500) && retryCount < 3) {
+        console.log(`ProfileUser - Thử lại lần ${retryCount + 1}/3...`)
+        
+        // Retry after a delay
+        setTimeout(() => {
+          fetchUserInfo(retryCount + 1)
+        }, 2000) // Wait 2 seconds before retry
+      } else {
+        // Only show error if it's not a temporary network issue or we've exceeded retry limit
+        if (retryCount >= 3) {
+          Swal.fire('Lỗi', 'Không thể kết nối đến server. Vui lòng thử lại sau.', 'error')
+        } else {
+          Swal.fire('Lỗi', 'Không lấy được thông tin người dùng', 'error')
+        }
+      }
     }
   }
 
@@ -73,6 +93,10 @@ function ProfileUser() {
   // Modal chứng chỉ
   const handleShowCertificates = async () => {
     handleClose()
+    await fetchCertificates()
+  }
+
+  const fetchCertificates = async (retryCount = 0) => {
     try {
       const res = await API.get('/result/tat-ca-ket-qua')
       const myResultsList = res.data.filter(r => r.IDNguoiDung?._id === userId)
@@ -82,13 +106,32 @@ function ProfileUser() {
       setCertReceived(getCertReceived.data)
     } catch (err) {
       console.error(err)
-      Swal.fire('Lỗi', 'Không lấy được kết quả', 'error')
+      
+      // Check if it's a network error and we haven't exceeded retry limit
+      if ((err.isNetworkError || err.isTimeout || err.response?.status >= 500) && retryCount < 3) {
+        console.log(`ProfileUser Certificates - Thử lại lần ${retryCount + 1}/3...`)
+        
+        // Retry after a delay
+        setTimeout(() => {
+          fetchCertificates(retryCount + 1)
+        }, 2000)
+      } else {
+        if (retryCount >= 3) {
+          Swal.fire('Lỗi', 'Không thể kết nối đến server. Vui lòng thử lại sau.', 'error')
+        } else {
+          Swal.fire('Lỗi', 'Không lấy được kết quả', 'error')
+        }
+      }
     }
   }
 
   // Modal khóa học
   const handleShowCourses = async () => {
     handleClose()
+    await fetchCourses()
+  }
+
+  const fetchCourses = async (retryCount = 0) => {
     try {
       const res = await API.get('/course/tat-ca-khoa-on')
       const myCoursesList = res.data.filter(c => c.IDTaiKhoan?.includes(userId))
@@ -96,13 +139,32 @@ function ProfileUser() {
       setShowCourseModal(true)
     } catch (err) {
       console.error(err)
-      Swal.fire('Lỗi', 'Không lấy được khóa học', 'error')
+      
+      // Check if it's a network error and we haven't exceeded retry limit
+      if ((err.isNetworkError || err.isTimeout || err.response?.status >= 500) && retryCount < 3) {
+        console.log(`ProfileUser Courses - Thử lại lần ${retryCount + 1}/3...`)
+        
+        // Retry after a delay
+        setTimeout(() => {
+          fetchCourses(retryCount + 1)
+        }, 2000)
+      } else {
+        if (retryCount >= 3) {
+          Swal.fire('Lỗi', 'Không thể kết nối đến server. Vui lòng thử lại sau.', 'error')
+        } else {
+          Swal.fire('Lỗi', 'Không lấy được khóa học', 'error')
+        }
+      }
     }
   }
 
   // Modal kỳ thi đã đăng ký
   const handleShowExams = async () => {
     handleClose()
+    await fetchExams()
+  }
+
+  const fetchExams = async (retryCount = 0) => {
     try {
       const res = await API.get('/exam/tat-ca-ky-thi')
       // Lọc các exam có IDTaiKhoan includes userId
@@ -112,7 +174,22 @@ function ProfileUser() {
       setShowExamModal(true)
     } catch (err) {
       console.error(err)
-      Swal.fire('Lỗi', 'Không lấy được kỳ thi', 'error')
+      
+      // Check if it's a network error and we haven't exceeded retry limit
+      if ((err.isNetworkError || err.isTimeout || err.response?.status >= 500) && retryCount < 3) {
+        console.log(`ProfileUser Exams - Thử lại lần ${retryCount + 1}/3...`)
+        
+        // Retry after a delay
+        setTimeout(() => {
+          fetchExams(retryCount + 1)
+        }, 2000)
+      } else {
+        if (retryCount >= 3) {
+          Swal.fire('Lỗi', 'Không thể kết nối đến server. Vui lòng thử lại sau.', 'error')
+        } else {
+          Swal.fire('Lỗi', 'Không lấy được kỳ thi', 'error')
+        }
+      }
     }
   }
 

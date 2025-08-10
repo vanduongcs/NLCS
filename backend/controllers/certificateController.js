@@ -9,12 +9,42 @@ const addCertificate = async (req, res) => {
     const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa } = req.body
 
     const certCount = await Certificate.findOne({ TenChungChi: TenChungChi })
+
+    // Kiểm tra có nhập đủ trường dữ liệu không
+    if (!Loai) {
+      return res.status(400).json({ message: 'Vui lòng nhập loại chứng chỉ', error: 'THIEU_TRUONG' })
+    }
+
+    if (!TenChungChi) {
+      return res.status(400).json({ message: 'Vui lòng nhập tên chứng chỉ', error: 'THIEU_TRUONG' })
+    }
+
+    if (!LePhiThi) {
+      return res.status(400).json({ message: 'Vui lòng nhập lệ phí thi', error: 'THIEU_TRUONG' })
+    }
+
+    if (!HocPhi) {
+      return res.status(400).json({ message: 'Vui lòng nhập học phí', error: 'THIEU_TRUONG' })
+    }
+
+    if (!DiemToiThieu) {
+      return res.status(400).json({ message: 'Vui lòng nhập điểm tối thiểu', error: 'THIEU_TRUONG' })
+    }
+
+    if (!DiemToiDa) {
+      return res.status(400).json({ message: 'Vui lòng nhập điểm tối đa', error: 'THIEU_TRUONG' })
+    }
+
     if (certCount) {
       return res.status(400).json({ message: 'Chứng chỉ đã tồn tại trong hệ thống', error: 'CHUNG_CHI_DA_TON_TAI' })
     }
 
-    if (DiemToiThieu > DiemToiDa) {
-      return res.status(400).json({ message: 'Điểm tối thiểu không được lớn hơn điểm tối đa', error: 'SAI_MIEN_GIA_TRI' })
+    if (DiemToiThieu >= DiemToiDa) {
+      return res.status(400).json({ message: 'Điểm tối thiểu phải nhỏ hơn điểm tối đa', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (LePhiThi < 0) {
+      return res.status(400).json({ message: 'Lệ phí thi không thể âm', error: 'SAI_MIEN_GIA_TRI' })
     }
 
     if (HocPhi < 0) {

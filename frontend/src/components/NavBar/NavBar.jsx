@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 // MUI
 import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // Extend
 import { jwtDecode } from 'jwt-decode'
@@ -20,8 +21,10 @@ function NavBar() {
   const theme = useTheme()
   const navigate = useNavigate()
   const [AccountInfor, SetAccountInfor] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const fetchAccount = async () => {
+  const fetchAccount = async (currentRetryCount = 0) => {
     try {
       const token = localStorage.getItem('token')
 
@@ -34,13 +37,31 @@ function NavBar() {
       if (decodedToken.Loai === 'admin' || decodedToken.Loai === 'user') {
         const account = await API.get(`/account/tim-tai-khoan/${decodedToken.TenTaiKhoan}`)
         SetAccountInfor(account.data)
+        setIsLoading(false)
+        setRetryCount(0) // Reset retry count on success
       } else {
         throw new Error('Không xác định được vai trò')
       }
     } catch (err) {
-      console.error(err.message)
-      localStorage.removeItem('token')
-      navigate('/dang-nhap')
+      console.error('Lỗi khi tải thông tin tài khoản:', err.message)
+      
+      // Check if it's a network error and we haven't exceeded retry limit
+      if ((err.isNetworkError || err.isTimeout || err.response?.status >= 500) && currentRetryCount < 3) {
+        console.log(`Thử lại lần ${currentRetryCount + 1}/3...`)
+        setRetryCount(currentRetryCount + 1)
+        
+        // Retry after a delay
+        setTimeout(() => {
+          fetchAccount(currentRetryCount + 1)
+        }, 2000) // Wait 2 seconds before retry
+      } else {
+        // Only navigate to login if it's not a temporary network issue
+        if (err.message === 'Không có token' || err.message === 'Không xác định được vai trò' || currentRetryCount >= 3) {
+          localStorage.removeItem('token')
+          navigate('/dang-nhap')
+        }
+        setIsLoading(false)
+      }
     }
   }
 
@@ -60,7 +81,7 @@ function NavBar() {
 
   useEffect(() => {
     fetchAccount()
-  }, [AccountInfor])
+  }, []) // Remove dependency to prevent infinite loop
 
   const clickOnLogo = () => {
     if (!isAdmin) navigate('trang-chu')
@@ -122,7 +143,11 @@ function NavBar() {
 
         <Box sx={{ mx: 2, display: 'flex', alignItems: 'center', gap: 2, color: '#f5f6fa' }}>
           <ModeSelector Input={theme.palette.mode} />
-          <ProfileUser />
+          {isLoading ? (
+            <CircularProgress size={20} sx={{ color: '#f5f6fa' }} />
+          ) : (
+            <ProfileUser />
+          )}
         </Box>
       </Box>
     </Box>

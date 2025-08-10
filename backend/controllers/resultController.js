@@ -19,8 +19,32 @@ function tinhDiemTK(diemArray) {
 const addResult = async (req, res) => {
   try {
     const { IDNguoiDung, IDKyThi, Diem1, Diem2, Diem3, Diem4 } = req.body
-    if (!IDNguoiDung || !IDKyThi || Diem1 === undefined || Diem2 === undefined) {
-      return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' })
+    if (!IDNguoiDung) {
+      return res.status(400).json({ message: 'Vui lòng nhập người dùng', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    try {
+      await Account.findById(IDNguoiDung)
+    } catch (error) {
+      return res.status(400).json({ message: 'Không tìm thấy người dùng', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!IDKyThi) {
+      return res.status(400).json({ message: 'Vui lòng nhập kỳ thi', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    try {
+      await Exam.findById(IDKyThi)
+    } catch (error) {
+      return res.status(400).json({ message: 'Không tìm thấy kỳ thi', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!Diem1) {
+      return res.status(400).json({ message: 'Vui lòng nhập điểm thành phần 1', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!Diem2) {
+      return res.status(400).json({ message: 'Vui lòng nhập điểm thành phần 2', error: 'SAI_MIEN_GIA_TRI' })
     }
 
     const hasResultWithSameExam = await Result.findOne({ IDNguoiDung, IDKyThi })

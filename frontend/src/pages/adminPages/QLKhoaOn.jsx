@@ -70,7 +70,7 @@ function QLKhoaOn() {
     NgayKhaiGiang: new Date(NgayKhaiGiang),
     NgayKetThuc: new Date(NgayKetThuc),
     Buoi,
-    SiSoToiDa: Number(SiSoToiDa) || undefined
+    SiSoToiDa: Number(SiSoToiDa) || 0
   })
 
   const resetForm = () => {
@@ -264,7 +264,7 @@ function QLKhoaOn() {
       resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Không thể thêm khóa học', message)
+      showError(message)
     }
   }
 
@@ -285,7 +285,7 @@ function QLKhoaOn() {
           await fetchCourses()
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-          showError('Không thể xóa khóa học', message)
+          showError(message)
         }
       }
     })
@@ -309,7 +309,7 @@ function QLKhoaOn() {
       resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Không thể cập nhật khóa học', message)
+      showError(message)
     }
   }
 
@@ -427,7 +427,7 @@ function QLKhoaOn() {
 
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Lỗi khi xóa học viên', message)
+      showError(message)
     }
   }
 

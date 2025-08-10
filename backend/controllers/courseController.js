@@ -67,19 +67,54 @@ const updateCourseNames = async (IDChungChi, NgayKhaiGiang, Buoi) => {
 // Thêm khóa học
 const addCourse = async (req, res) => {
   try {
+    console.log('Request body:', req.body)
     const { IDChungChi, NgayKhaiGiang, NgayKetThuc, Buoi, SiSoToiDa, LichHoc } = req.body
 
-    if (NgayKhaiGiang > NgayKetThuc) {
+    if (!IDChungChi) {
+      return res.status(400).json({ message: 'Vui lòng nhập chứng chỉ', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    try {
+      await Certificate.findById(IDChungChi)
+    } catch (error) {
+      return res.status(400).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' })
+    }
+
+    if (!LichHoc) {
+      return res.status(400).json({ message: 'Vui lòng nhập lịch học', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!NgayKhaiGiang) {
+      return res.status(400).json({ message: 'Vui lòng nhập ngày khai giảng', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!NgayKetThuc) {
+      return res.status(400).json({ message: 'Vui lòng nhập ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!Buoi) {
+      return res.status(400).json({ message: 'Vui lòng nhập buổi học', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    if (!SiSoToiDa || SiSoToiDa <= 0) {
+      return res.status(400).json({ message: 'Vui lòng nhập sĩ số tối đa hợp lệ', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    // Convert dates to Date objects for comparison
+    const dateKhaiGiang = new Date(NgayKhaiGiang)
+    const dateKetThuc = new Date(NgayKetThuc)
+    const now = new Date()
+
+    if (dateKhaiGiang > dateKetThuc) {
       return res.status(400).json({ message: 'Ngày khai giảng phải nhỏ hơn ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
     }
 
-    const now = new Date()
-    if (NgayKhaiGiang < now) {
+    if (dateKhaiGiang < now) {
       return res.status(400).json({ message: 'Ngày khai giảng không được nhỏ hơn ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
     }
 
     // Add schedule validation with correct day numbers
-    const ThuTrongTuan = new Date(NgayKhaiGiang).getDay()
+    const ThuTrongTuan = dateKhaiGiang.getDay()
     if (LichHoc === 'T2 - T4 - T6') {
       if (![1, 3, 5].includes(ThuTrongTuan)) {
         return res.status(400).json({
@@ -95,10 +130,6 @@ const addCourse = async (req, res) => {
         })
       }
     }
-
-    const certificate = await Certificate.findById(IDChungChi)
-
-    if (!certificate) return res.status(404).json({ message: 'Không tìm thấy chứng chỉ', error: 'KHONG_TIM_THAY' })
 
     // Tìm số thứ tự tiếp theo cho khóa học
     const nextNumber = await findNextCourseNumber(IDChungChi, NgayKhaiGiang, Buoi)
@@ -131,8 +162,10 @@ const addCourse = async (req, res) => {
     })
 
     await history.save()
+    console.log('Course added successfully')
     res.status(201).json({ message: 'Thêm khóa ôn thành công' })
   } catch (error) {
+    console.error('Error in addCourse:', error)
     res.status(500).json({ message: 'Lỗi server', error: error.message })
   }
 }

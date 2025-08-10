@@ -1,12 +1,11 @@
 import express from 'express'
 import accountController from '../controllers/accountController.js'
-import accountMiddleware from '../middleware/accountMiddleware.js'
 
 const router = express.Router()
 
-router.post('/dang-ky', accountMiddleware.accountRLMiddleware, accountMiddleware.checkThongTinDK, accountController.register)
+router.post('/dang-ky', accountController.register)
 
-router.post('/dang-nhap', accountMiddleware.accountRLMiddleware, accountController.login)
+router.post('/dang-nhap', accountController.login)
 
 router.get('/tat-ca-tai-khoan', accountController.getAccounts)
 

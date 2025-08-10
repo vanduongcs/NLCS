@@ -24,6 +24,26 @@ const register = async (req, res) => {
       SDT = ''
     } = req.body
 
+    if (!TenHienThi) {
+      return res.status(400).json({ message: 'Vui lòng nhập tên người dùng', error: 'THIEU_TRUONG' })
+    }
+
+    if (!TenTaiKhoan) {
+      return res.status(400).json({ message: 'Vui lòng nhập tên tài khoản', error: 'THIEU_TRUONG' })
+    }
+
+    if (!CCCD) {
+      return res.status(400).json({ message: 'Vui lòng nhập căn cước công dân', error: 'THIEU_TRUONG' })
+    }
+
+    if (!SDT) {
+      return res.status(400).json({ message: 'Vui lòng nhập số điện thoại', error: 'THIEU_TRUONG' })
+    }
+
+    if (!MatKhau) {
+      return res.status(400).json({ message: 'Vui lòng nhập mật khẩu', error: 'THIEU_TRUONG' })
+    }
+
     // Kiểm tra các trường dữ liệu này có tồn tại trong collection Account từ trước không
     const [existUser, existCCCD, existSDT] = await Promise.all([
       Account.findOne({ TenTaiKhoan }),

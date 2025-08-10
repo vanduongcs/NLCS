@@ -94,7 +94,7 @@ function QLKyThi() {
       setAccounts(accountsRes.data) // Lưu danh sách tài khoản
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Lỗi khi tải dữ liệu', message)
+      showError(message)
     }
   }
 
@@ -104,7 +104,7 @@ function QLKyThi() {
       SetExams(res.data)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError(`Không thể tải danh sách ${pageContent}`, message)
+      showError(message)
     }
   }
 
@@ -217,7 +217,7 @@ function QLKyThi() {
       resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError(`Lỗi khi thêm ${pageContent}`, message)
+      showError(message)
     }
   }
 
@@ -245,7 +245,7 @@ function QLKyThi() {
           })
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-          showError(`Lỗi khi xóa ${pageContent}`, message)
+          showError(message)
         }
       }
     })
@@ -266,7 +266,7 @@ function QLKyThi() {
       resetForm()
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError(`Lỗi khi chỉnh sửa ${pageContent}`, message)
+      showError(message)
     }
   }
 
@@ -284,7 +284,7 @@ function QLKyThi() {
       // Kiểm tra xem tài khoản đã có trong danh sách chưa
       if (currentAccountIds.includes(accountId)) {
         const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-        showError('Thí sinh đã có trong kỳ thi này!', message)
+        showError(message)
         return
       }
 
@@ -382,7 +382,7 @@ function QLKyThi() {
 
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      showError('Lỗi khi xóa thí sinh', message)
+      showError(message)
     }
   }
 
