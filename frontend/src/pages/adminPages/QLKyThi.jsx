@@ -3,6 +3,7 @@ import Swal from 'sweetalert2'
 import API from '../../api.jsx'
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
 import ExamForm from '../../components/Form/ExamForm.jsx'
+import ImportExcel from '../../components/ImportExcel/ImportExcel.jsx'
 
 import HistoryIcon from '@mui/icons-material/History'
 import IconButton from '@mui/material/IconButton'
@@ -11,7 +12,6 @@ import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetc
 import RelatedDataModal from '../../components/Modal/RelatedDataModal.jsx'
 
 import ListAltIcon from '@mui/icons-material/ListAlt'
-
 
 function QLKyThi() {
   // Constants
@@ -22,7 +22,6 @@ function QLKyThi() {
   const funcFindAll = 'tat-ca-ky-thi'
   const funcUpdate = 'cap-nhat-ky-thi'
   const funcDelete = 'xoa-ky-thi'
-  const historyAddress = 'examHistory'
 
   // State
   const [EditingExam, SetEditingExam] = useState(null)
@@ -41,7 +40,25 @@ function QLKyThi() {
   const [modalColumns, setModalColumns] = useState([])
   const [modalType, setModalType] = useState('LichSu')
   const [modalOptions, setModalOptions] = useState([])
-  const [accounts, setAccounts] = useState([]) // Thêm state này để lưu danh sách tài khoản
+  const [accounts, setAccounts] = useState([])
+
+  // ImportExcel state
+  const [importExcelOpen, setImportExcelOpen] = useState(false)
+
+  // --- helpers ngày (đồng bộ với phần course) ---
+  const ddmmyyyyToISO = (str) => {
+    const s = String(str ?? '').trim()
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+    if (!m) return null
+    const [ , dd, mm, yyyy ] = m
+    return `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`
+  }
+  const toISOForMongo = (v) => {
+    if (!v) return ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+    const iso = ddmmyyyyToISO(v)
+    return iso || v
+  }
 
   const formStates = {
     IDChungChi, SetIDChungChi,
@@ -91,7 +108,7 @@ function QLKyThi() {
       ])
       setCertificates(certificatesRes.data)
       SetExams(examsRes.data)
-      setAccounts(accountsRes.data) // Lưu danh sách tài khoản
+      setAccounts(accountsRes.data)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError(message)
@@ -129,7 +146,7 @@ function QLKyThi() {
     return String(value)
   }
 
-  // Hàm mở modal lịch sử
+  // Hàm mở modal lịch sử / thí sinh
   const handleOpenModal = (type, row) => {
     setModalType(type)
     if (type === 'LichSu') {
@@ -156,56 +173,55 @@ function QLKyThi() {
     setModalOpen(true)
   }
 
-  const getDisplayNameById = (id, type) => {
-    if (!id) return ''
-
-    if (type === 'IDTaiKhoan') {
-      const DSAccount = API.get('/account/tat-ca-tai-khoan')
-      const acc = DSAccount.find(acc => acc._id === id)
-      return acc ? acc.Ten : id
-    }
-  }
-
   const fetchRelatedData = async (examId, row, type) => {
     if (type === 'IDTaiKhoan') {
-      // Lấy danh sách tài khoản của kỳ thi này
-      const exam = Exams.find(e => e._id === examId)
-      if (!exam) {
-        setModalData([])
-        setModalColumns([])
-        setModalOptions([])
+      try {
+        const examRes = await API.get(`/exam/${funcFind}/${examId}`)
+        const exam = examRes.data
+        if (!exam) { setModalData([]); setModalColumns([]); setModalOptions([]); setModalTitle('Danh sách thí sinh'); return }
+        const accountsRes = await API.get('/account/tat-ca-tai-khoan')
+        setAccounts(accountsRes.data)
+        const resultsRes = await API.get(`/result/tat-ca-ket-qua`)
+        const allResults = resultsRes.data
+        const examResults = allResults.filter(result => String(result.IDKyThi) === String(examId) || (result.IDKyThi && String(result.IDKyThi._id) === String(examId)))
+        const certReceivedRes = await API.get('/certReceived/tat-ca-chung-chi-da-nhan')
+        const allCertReceived = certReceivedRes.data
+        const dsThiSinh = (exam.IDTaiKhoan || []).map(accId => {
+          const acc = accountsRes.data.find(a => String(a._id) === String(accId))
+          const result = examResults.find(r => String(r.IDNguoiDung) === String(accId) || (r.IDNguoiDung && String(r.IDNguoiDung._id) === String(accId)))
+          let certStatus = '___'
+          if (result) {
+            const certReceived = allCertReceived.find(cr => String(cr.IDKetQua) === String(result._id) || (cr.IDKetQua && String(cr.IDKetQua._id) === String(result._id)))
+            if (certReceived) certStatus = certReceived.TrangThai
+          }
+          return {
+            _id: acc?._id || accId,
+            TenHienThi: acc?.TenHienThi || accId,
+            TenTaiKhoan: acc?.TenTaiKhoan || '',
+            SDT: acc?.SDT || '',
+            CCCD: acc?.CCCD || '',
+            DiemTK: result ? (result.DiemTK !== undefined ? result.DiemTK : '___') : '___',
+            KQ: result ? result.KQ : '___',
+            TrangThai: certStatus
+          }
+        })
+        setModalData(dsThiSinh)
+        setModalColumns([
+          { key: 'TenHienThi', label: 'Tên thí sinh' },
+          { key: 'TenTaiKhoan', label: 'Tài khoản' },
+          { key: 'DiemTK', label: 'Điểm tổng kết' },
+          { key: 'KQ', label: 'Kết quả' },
+          { key: 'TrangThai', label: 'Trạng thái chứng chỉ' },
+          { key: 'SDT', label: 'Số điện thoại' },
+          { key: 'CCCD', label: 'CCCD' }
+        ])
+        const accountNotInExam = accountsRes.data.filter(acc => !(exam.IDTaiKhoan || []).some(id => String(id) === String(acc._id)))
+        setModalOptions(accountNotInExam.map(a => ({ value: a._id, label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '') })))
         setModalTitle('Danh sách thí sinh')
-        return
+      } catch (error) {
+        console.error('Error fetching related data:', error)
+        showError('Lỗi khi tải dữ liệu: ' + (error.response?.data?.message || error.message))
       }
-      // Lấy thông tin tài khoản từ accounts
-      const dsThiSinh = (exam.IDTaiKhoan || []).map(accId => {
-        const acc = accounts.find(a => a._id === accId)
-        return {
-          _id: acc?._id || accId,
-          TenHienThi: acc?.TenHienThi || accId,
-          TenTaiKhoan: acc?.TenTaiKhoan || '',
-          SDT: acc?.SDT || '',
-          CCCD: acc?.CCCD || ''
-        }
-      })
-      setModalData(dsThiSinh)
-      setModalColumns([
-        { key: 'TenHienThi', label: 'Tên thí sinh' },
-        { key: 'TenTaiKhoan', label: 'Tài khoản' },
-        { key: 'SDT', label: 'Số điện thoại' },
-        { key: 'CCCD', label: 'CCCD' }
-      ])
-      // Tìm các tài khoản chưa có trong kỳ thi này để làm options thêm
-      const accountsListRes = await API.get('/account/tat-ca-tai-khoan')
-      const accountsList = accountsListRes.data
-      const accountNotInExam = accountsList.filter(acc =>
-        !(exam.IDTaiKhoan || []).map(id => String(id)).includes(String(acc._id))
-      )
-      setModalOptions(accountNotInExam.map(a => ({
-        value: a._id,
-        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })))
-      setModalTitle('Danh sách thí sinh')
     }
   }
 
@@ -236,13 +252,7 @@ function QLKyThi() {
         try {
           await API.delete(`/${routeAddress}/${funcDelete}/${id}`)
           await fetchExams()
-          Swal.fire({
-            title: 'Đã xóa!',
-            text: `${pageContent} đã được xóa thành công.`,
-            icon: 'success',
-            confirmButtonColor: '#3085d6',
-            confirmButtonText: 'Đóng'
-          })
+          Swal.fire({ title: 'Đã xóa!', text: `${pageContent} đã được xóa thành công.`, icon: 'success', confirmButtonColor: '#3085d6', confirmButtonText: 'Đóng' })
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
           showError(message)
@@ -270,198 +280,123 @@ function QLKyThi() {
     }
   }
 
+  // ✅ Import Excel: mapping theo tên chứng chỉ và chuẩn hóa ngày (DD/MM/YYYY -> ISO) + chuẩn hóa Buổi
+  const handleImportExcel = async (data) => {
+    try {
+      const importPromises = data.map(async (row) => {
+        const certificate = certificates.find(cert => cert.TenChungChi === row.IDChungChi)
+        if (!certificate) {
+          throw new Error(`Không tìm thấy chứng chỉ: ${row.IDChungChi}`)
+        }
+        const buoiStr = String(row.Buoi || '').trim().toLowerCase()
+        const finalBuoi = (buoiStr === 'sáng' || buoiStr === 'sang') ? 'Sáng' : (buoiStr === 'chiều' || buoiStr === 'chieu') ? 'Chiều' : row.Buoi
+        const examData = {
+          IDChungChi: certificate._id,
+          NgayThi: toISOForMongo(row.NgayThi || ''),
+          Buoi: finalBuoi || '',
+          SiSoToiDa: row.SiSoToiDa ? Number(row.SiSoToiDa) : 0
+        }
+        return API.post(`/${routeAddress}/${funcAdd}`, examData)
+      })
+
+      await Promise.all(importPromises)
+      Swal.fire({ icon: 'success', title: 'Thành công', text: `Đã nhập thành công ${data.length} kỳ thi`, confirmButtonColor: '#1976d2' })
+      fetchExams()
+    } catch (error) {
+      console.error('Lỗi nhập dữ liệu:', error)
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: (error?.response?.data?.message) || error?.message || 'Có lỗi xảy ra khi nhập dữ liệu', confirmButtonColor: '#1976d2' })
+    }
+  }
+
+  const handleOpenImportExcel = () => setImportExcelOpen(true)
+
   const handleAddRelated = async (examId, type, accountId) => {
     if (type !== 'IDTaiKhoan') return
-
     try {
-      // Lấy thông tin exam hiện tại
       const examRes = await API.get(`/exam/${funcFind}/${examId}`)
       const examData = examRes.data
-
-      // Lấy danh sách IDTaiKhoan hiện tại, đảm bảo không null/undefined
       const currentAccountIds = examData.IDTaiKhoan || []
-
-      // Kiểm tra xem tài khoản đã có trong danh sách chưa
-      if (currentAccountIds.includes(accountId)) {
-        const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-        showError(message)
-        return
-      }
-
-      // Thêm accountId vào danh sách
+      if (currentAccountIds.includes(accountId)) { showError('Thí sinh đã có trong danh sách'); return }
       const updatedAccountIds = [...currentAccountIds, accountId]
-
-      // Cập nhật exam với danh sách IDTaiKhoan mới
       await API.put(`/${routeAddress}/${funcUpdate}/${examId}`, {
         IDChungChi: examData.IDChungChi?._id || examData.IDChungChi,
         IDTaiKhoan: updatedAccountIds,
-        NgayThi: examData.NgayThi,
         Buoi: examData.Buoi,
         SiSoToiDa: examData.SiSoToiDa
       })
-
-      // Refresh dữ liệu exams trong state
-      await fetchExams()
-
-      // Fetch lại dữ liệu accounts để đảm bảo có dữ liệu mới nhất
-      const accountsRes = await API.get('/account/tat-ca-tai-khoan')
-      const updatedAccounts = accountsRes.data
-      setAccounts(updatedAccounts) // Cập nhật state accounts
-
-      // Cập nhật modal ngay lập tức với dữ liệu mới
-      const dsThiSinh = updatedAccountIds.map(accId => {
-        const acc = updatedAccounts.find(a => a._id === accId)
-        return {
-          _id: acc?._id || accId,
-          TenHienThi: acc?.TenHienThi || accId,
-          TenTaiKhoan: acc?.TenTaiKhoan || '',
-          SDT: acc?.SDT || '',
-          CCCD: acc?.CCCD || ''
-        }
-      })
-
-      setModalData(dsThiSinh)
-
-      // Cập nhật options (loại bỏ account vừa thêm)
-      const accountNotInExam = updatedAccounts.filter(acc =>
-        !updatedAccountIds.includes(acc._id)
-      )
-      setModalOptions(accountNotInExam.map(a => ({
-        value: a._id,
-        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })))
-
+      await fetchExams(); await fetchRelatedData(examId, null, type)
     } catch (error) {
+      console.error('Error adding student:', error)
       const message = error.response?.data?.message || 'Lỗi khi thêm thí sinh vào kỳ thi.'
       showError(message)
-
     }
   }
 
   const handleDeleteRelated = async (row, examId, type) => {
     if (type !== 'IDTaiKhoan') return
     try {
+      const resultsRes = await API.get(`/result/tat-ca-ket-qua`)
+      const allResults = resultsRes.data
+      const studentHasResult = allResults.some(result => {
+        const resultStudentId = typeof result.IDNguoiDung === 'object' ? result.IDNguoiDung._id : result.IDNguoiDung
+        const resultExamId = typeof result.IDKyThi === 'object' ? result.IDKyThi._id : result.IDKyThi
+        return String(resultStudentId) === String(row._id) && String(resultExamId) === String(examId)
+      })
+      if (studentHasResult) { showError('Không thể xóa thí sinh này khỏi kỳ thi vì thí sinh đã có kết quả thi.'); return }
       const exam = Exams.find(e => e._id === examId)
       if (!exam) return
-
       const newList = (exam.IDTaiKhoan || []).filter(id => id !== row._id)
-
       await API.put(`/exam/${funcUpdate}/${examId}`, {
-        ...exam,
+        IDChungChi: typeof exam.IDChungChi === 'object' ? exam.IDChungChi._id : exam.IDChungChi,
         IDTaiKhoan: newList,
-        IDChungChi: exam.IDChungChi?._id || exam.IDChungChi,
-        NgayThi: exam.NgayThi,
         Buoi: exam.Buoi,
         SiSoToiDa: exam.SiSoToiDa
       })
-
-      await fetchExams()
-
-      // Cập nhật modal ngay lập tức
-      const dsThiSinh = newList.map(accId => {
-        const acc = accounts.find(a => a._id === accId)
-        return {
-          _id: acc?._id || accId,
-          TenHienThi: acc?.TenHienThi || accId,
-          TenTaiKhoan: acc?.TenTaiKhoan || '',
-          SDT: acc?.SDT || '',
-          CCCD: acc?.CCCD || ''
-        }
-      })
-
-      setModalData(dsThiSinh)
-
-      // Cập nhật options (thêm lại account vừa xóa)
-      const accountNotInExam = accounts.filter(acc =>
-        !newList.includes(acc._id)
-      )
-      setModalOptions(accountNotInExam.map(a => ({
-        value: a._id,
-        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })))
-
+      await fetchExams(); await fetchRelatedData(examId, null, type)
     } catch (error) {
+      console.error('Error deleting student:', error)
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError(message)
     }
   }
 
-  // Thêm hàm handleUpdateModalOptions
   const handleUpdateModalOptions = (type, addedId) => {
     if (type === 'IDTaiKhoan') {
       setModalOptions(prev => prev.filter(option => option.value !== addedId))
     }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   // Table configuration
   const columns = [
     { label: 'Tên kỳ thi', key: 'TenKyThi' },
-    {
-      label: 'Chứng chỉ',
-      key: 'IDChungChi',
-      render: (value, row) => getCertificateInfo(row, 'TenChungChi')
-    },
-    {
-      label: 'Loại',
-      key: 'IDChungChi',
-      render: (value, row) => getCertificateInfo(row, 'Loai')
-    },
-    {
-      label: 'Lệ phí thi',
-      key: 'IDChungChi',
-      render: (value, row) => getCertificateInfo(row, 'LePhiThi')
-    },
+    { label: 'Chứng chỉ', key: 'IDChungChi', render: (value, row) => getCertificateInfo(row, 'TenChungChi') },
+    { label: 'Loại', key: 'IDChungChi', render: (value, row) => getCertificateInfo(row, 'Loai') },
+    { label: 'Lệ phí thi', key: 'IDChungChi', render: (value, row) => getCertificateInfo(row, 'LePhiThi') },
     { label: 'Ngày thi', key: 'NgayThi', isDate: true },
     { label: 'Buổi', key: 'Buoi' },
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' },
     { label: 'Sĩ số hiện tại', key: 'SiSoHienTai', type: 'number' },
-    {
-      label: 'DS thí sinh',
-      key: 'IDTaiKhoan',
-      render: (value, row) => (
-        <IconButton onClick={() => handleOpenModal('IDTaiKhoan', row)}>
-          <ListAltIcon color="primary" />
-        </IconButton>
-      )
-    },
-    {
-      label: 'Lịch sử',
-      key: 'LichSu',
-      align: 'center',
-      render: (value, row) => (
-        <IconButton onClick={() => handleOpenModal('LichSu', row)}>
-          <HistoryIcon color="secondary" />
-        </IconButton>
-      )
-    },
+    { label: 'DS thí sinh', key: 'IDTaiKhoan', render: (value, row) => (<IconButton onClick={() => handleOpenModal('IDTaiKhoan', row)}><ListAltIcon color="primary" /></IconButton>) },
+    { label: 'Lịch sử', key: 'LichSu', align: 'center', render: (value, row) => (<IconButton onClick={() => handleOpenModal('LichSu', row)}><HistoryIcon color="secondary" /></IconButton>) },
     { label: 'Sửa', key: 'editButton', align: 'center', isAction: 'edit' },
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ]
 
+  // Columns cho form thông thường
   const columnsCanEdit = [
-    {
-      label: 'Chọn chứng chỉ',
-      key: 'IDChungChi',
-      type: 'autocomplete',
-      options: certificates.map(cert => ({
-        label: cert.TenChungChi,
-        value: cert._id
-      }))
-    },
+    { label: 'Chọn chứng chỉ', key: 'IDChungChi', type: 'autocomplete', options: certificates.map(cert => ({ label: cert.TenChungChi, value: cert._id })) },
     { label: 'Ngày thi', key: 'NgayThi', type: 'date' },
-    {
-      label: 'Buổi',
-      key: 'Buoi',
-      type: 'select',
-      options: [
-        { value: 'Sáng', label: 'Sáng' },
-        { value: 'Chiều', label: 'Chiều' }
-      ]
-    },
+    { label: 'Buổi', key: 'Buoi', type: 'select', options: [ { value: 'Sáng', label: 'Sáng' }, { value: 'Chiều', label: 'Chiều' } ] },
+    { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' }
+  ]
+
+  // Columns cho Import Excel
+  const columnsForImport = [
+    { label: 'Tên chứng chỉ', key: 'IDChungChi', type: 'text' },
+    { label: 'Ngày thi', key: 'NgayThi', type: 'date' },
+    { label: 'Buổi', key: 'Buoi', type: 'text', placeholder: 'Sáng hoặc Chiều' },
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' }
   ]
 
@@ -472,7 +407,7 @@ function QLKyThi() {
         columnsCanEdit={columnsCanEdit}
         rows={Exams}
         formStates={formStates}
-        pageContent="đợt thi"
+        pageContent={'đợt thi'}
         handleAdd={handleAdd}
         handleEdit={handleEdit}
         isEditing={!!EditingExam}
@@ -480,6 +415,7 @@ function QLKyThi() {
         handleDelete={handleDelete}
         resetForm={resetForm}
         FormName={ExamForm}
+        onImportExcel={handleOpenImportExcel}
       />
       <RelatedDataModal
         open={modalOpen}
@@ -492,7 +428,14 @@ function QLKyThi() {
         columns={modalColumns}
         onAdd={handleAddRelated}
         onDelete={handleDeleteRelated}
-        onUpdateOptions={handleUpdateModalOptions} // <-- Sửa từ null thành handleUpdateModalOptions
+        onUpdateOptions={handleUpdateModalOptions}
+      />
+      <ImportExcel
+        open={importExcelOpen}
+        onClose={() => setImportExcelOpen(false)}
+        onImport={handleImportExcel}
+        columnsCanEdit={columnsForImport}
+        pageContent={pageContent}
       />
     </>
   )

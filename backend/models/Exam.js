@@ -21,8 +21,7 @@ const ExamSchema = new mongoose.Schema({
   },
   Buoi: {
     type: String,
-    required: true,
-    enum: ['Sáng', 'Chiều']
+    required: true
   },
   SiSoToiDa: {
     type: Number,

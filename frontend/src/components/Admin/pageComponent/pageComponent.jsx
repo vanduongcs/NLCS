@@ -17,7 +17,8 @@ function PageComponent({
   isEditing,
   handleUpdate,
   resetForm,
-  FormName
+  FormName,
+  onImportExcel
 }) {
   const [showForm, setShowForm] = useState(true)
 
@@ -71,6 +72,7 @@ function PageComponent({
               handleUpdate={handleUpdate}
               isEditing={isEditing}
               resetForm={resetForm}
+              onImportExcel={onImportExcel}
             />
           </Box>
         )}

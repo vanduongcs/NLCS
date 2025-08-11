@@ -1,138 +1,120 @@
 import { useState, useEffect } from 'react'
-import Swal from 'sweetalert2'
-
-// MUI
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-
-// Custom
 import API from '../../../api.jsx'
+import { Button, TextField, Paper, Typography, Divider } from '@mui/material'
 import HienThiKetQua from './HienThiKetQua.jsx'
 
 function KTChungChi() {
-  const [cccd, SetCccd] = useState('')
-  const [resultId, SetResultId] = useState('')
+  const [cccd, setCccd] = useState('')
+  const [resultId, setResultId] = useState('')
+  const [Accounts, setAccounts] = useState([])
   const [resultInfo, SetResultInfo] = useState(null)
 
-  // State để lưu toàn bộ danh sách
-  const [Accounts, SetAccounts] = useState([])
-
-  // Hàm format ngày từ yyyy-mm-dd sang dd/mm/yyyy
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const day = date.getDate().toString().padStart(2, '0')
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
-  }
-
-  // Hàm fetch dữ liệu ban đầu
-  const FetchData = async () => {
-    try {
-      const [taiKhoanResponse] = await Promise.all([
-        API.get('/account/tat-ca-tai-khoan')
-      ])
-
-      SetAccounts(taiKhoanResponse.data)
-    } catch (error) {
-      console.error('Lỗi tải dữ liệu:', error)
-      Swal.fire('Lỗi', 'Không thể tải dữ liệu', 'error')
-    }
-  }
-
   useEffect(() => {
-    FetchData()
+    API.get('/account/tat-ca-tai-khoan')
+      .then(res => setAccounts(res.data))
+      .catch(() => setAccounts([]))
   }, [])
 
-  // Kiểm tra ngày hết hạn
-  const KiemTraNgayHetHan = (ngayHetHan) => {
-    const today = new Date().toISOString().slice(0, 10)
-    return ngayHetHan && ngayHetHan <= today
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('vi-VN')
   }
 
-  // Xử lý kiểm tra chứng chỉ
-  const XuLyKiemTraChungChi = async () => {
-    // Kiểm tra đầu vào
-    if (!cccd.trim() || !resultId.trim()) {
-      return Swal.fire('Vui lòng nhập đầy đủ CCCD và mã kết quả', '', 'warning')
+  const KiemTraNgayHetHan = (ngay) => {
+    if (!ngay) return false
+    const today = new Date()
+    return new Date(ngay) < today
+  }
+
+  const handleCheck = async () => {
+    try {
+      // Tìm tài khoản
+      const taiKhoan = Accounts.find(acc => acc.CCCD?.trim() === cccd.trim())
+      if (!taiKhoan) {
+        return SetResultInfo({
+          hopLe: false,
+          message: 'Không tìm thấy người dùng với CCCD này'
+        })
+      }
+
+      // Lấy tất cả chứng chỉ đã nhận của người dùng
+      const fetchChungChiTuongUng = await API.get(
+        `/certReceived/tat-ca-chung-chi-da-nhan/${taiKhoan._id}`
+      )
+
+      // Lọc chứng chỉ theo ID nhập vào
+      const chungChiTuongUng = fetchChungChiTuongUng.data.filter(
+        cc => cc._id === resultId.trim()
+      )
+      const chungChiHienThi = chungChiTuongUng[0]
+
+      if (!chungChiHienThi) {
+        return SetResultInfo({
+          hopLe: false,
+          message: 'Không tìm thấy chứng chỉ với mã số này'
+        })
+      }
+
+      const daHetHan = KiemTraNgayHetHan(
+        chungChiHienThi?.IDKetQua?.NgayHetHan?.slice(0, 10)
+      )
+
+      SetResultInfo({
+        hopLe: true,
+        hoTen: chungChiHienThi?.IDNguoiDung?.TenHienThi,
+        tenKyThi: chungChiHienThi?.IDKetQua?.IDKyThi?.TenKyThi || '',
+        tenChungChi:
+          chungChiHienThi?.IDKetQua?.IDKyThi?.IDChungChi?.TenChungChi || '',
+        trangThai: chungChiHienThi?.TrangThai || '',
+        ngayCap: formatDate(chungChiHienThi?.IDKetQua?.NgayCap),
+        ngayHetHan: formatDate(chungChiHienThi?.IDKetQua?.NgayHetHan),
+        daHetHan
+      })
+    } catch (error) {
+      SetResultInfo({
+        hopLe: false,
+        message: 'Lỗi hệ thống khi kiểm tra chứng chỉ'
+      })
     }
-
-    // Tìm tài khoản
-    const taiKhoan = Accounts.find(acc =>
-      acc.CCCD?.trim() === cccd.trim()
-    )
-    if (!taiKhoan) {
-      return Swal.fire('Không tìm thấy người dùng với CCCD này', '', 'error')
-    }
-
-    const fetchChungChiTuongUng = await API.get(`/certReceived/tat-ca-chung-chi-da-nhan/${taiKhoan._id}`)
-
-    const chungChiTuongUng = fetchChungChiTuongUng.data.filter(cc => cc._id === resultId.trim())
-    const chungChiHienThi = chungChiTuongUng[0]
-    console.log('Chứng chỉ tương ứng:', chungChiHienThi)
-
-    // Xử lý thông tin kết quả
-    const daHetHan = KiemTraNgayHetHan(chungChiTuongUng?.NgayHetHan?.slice(0, 10))
-
-    SetResultInfo({
-      hoTen: chungChiHienThi?.IDNguoiDung?.TenHienThi,
-      tenKyThi: chungChiHienThi?.IDKetQua?.IDKyThi?.TenKyThi || '',
-      tenChungChi: chungChiHienThi?.IDKetQua?.IDKyThi?.IDChungChi?.TenChungChi || '',
-      trangThai: chungChiHienThi?.TrangThai || '',
-      ngayCap: formatDate(chungChiHienThi?.IDKetQua?.NgayCap),
-      ngayHetHan: formatDate(chungChiHienThi?.IDKetQua?.NgayHetHan),
-      daHetHan
-    })
-  }
-
-  const PageStyle = {
-    p: 4,
-    minHeight: '80vh',
-    bgcolor: (theme) => theme.palette.background.default
-  }
-
-  const NotificationStyle = {
-    width: '100%',
-    height: '150px',
-    borderRadius: 4,
-    m: '2 2 2 -2',
-    display: 'flex',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    bgcolor: (theme) => theme.palette.background.paper
   }
 
   return (
-    <Box sx={PageStyle}>
-      <Box
-        sx={NotificationStyle}>
-        <Box sx={{ m: 4 }}>
-          <Typography variant='h5' gutterBottom><strong>Lưu ý:</strong> Mã số là mã chứng chỉ được in trên chứng chỉ của thí sinh.</Typography>
-          <Typography variant='h6'>Nếu có bất kỳ sai sót nào vui lòng phản ánh qua mail: <strong>vanb2207577@student.ctu.edu.vn</strong></Typography>
-        </Box>
-      </Box>
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h6" gutterBottom>Kiểm tra chứng chỉ</Typography>
+      <Divider sx={{ mb: 2 }} />
 
-      <Typography sx={{ mt: 2 }} variant="h5" fontWeight="bold" gutterBottom> Kiểm tra chứng chỉ </Typography>
+      <TextField
+        fullWidth
+        label="Nhập CCCD"
+        variant="outlined"
+        value={cccd}
+        onChange={(e) => setCccd(e.target.value)}
+        sx={{ mb: 2 }}
+      />
 
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <TextField
-          label="CCCD"
-          value={cccd}
-          onChange={(e) => SetCccd(e.target.value)}
-        />
-        <TextField
-          label="Mã số"
-          value={resultId}
-          onChange={(e) => SetResultId(e.target.value)}
-        />
-        <Button variant="contained" onClick={XuLyKiemTraChungChi}> Kiểm tra </Button>
-      </Box>
+      <TextField
+        fullWidth
+        label="Nhập mã chứng chỉ"
+        variant="outlined"
+        value={resultId}
+        onChange={(e) => setResultId(e.target.value)}
+        sx={{ mb: 2 }}
+      />
 
-      {resultInfo && <HienThiKetQua resultInfo={resultInfo} />}
-    </Box>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleCheck}
+      >
+        Kiểm tra
+      </Button>
+
+      {resultInfo && (
+        <div style={{ marginTop: 20 }}>
+          <HienThiKetQua resultInfo={resultInfo} />
+        </div>
+      )}
+    </Paper>
   )
 }
 

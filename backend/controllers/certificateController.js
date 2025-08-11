@@ -6,7 +6,7 @@ import CertificateHistory from '../models/CertificateHistory.js'
 // Thêm chứng chỉ
 const addCertificate = async (req, res) => {
   try {
-    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa } = req.body
+    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa, CachTinhDiem } = req.body
 
     const certCount = await Certificate.findOne({ TenChungChi: TenChungChi })
 
@@ -35,6 +35,10 @@ const addCertificate = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập điểm tối đa', error: 'THIEU_TRUONG' })
     }
 
+    if (!CachTinhDiem) {
+      return res.status(400).json({ message: 'Vui lòng chọn cách tính điểm', error: 'THIEU_TRUONG' })
+    }
+
     if (certCount) {
       return res.status(400).json({ message: 'Chứng chỉ đã tồn tại trong hệ thống', error: 'CHUNG_CHI_DA_TON_TAI' })
     }
@@ -55,7 +59,20 @@ const addCertificate = async (req, res) => {
       return res.status(400).json({ message: 'Thời hạn không thể âm', error: 'SAI_MIEN_GIA_TRI' })
     }
 
-    const newCertificate = new Certificate({ Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa })
+    if (CachTinhDiem !== 'Trung bình' && CachTinhDiem !== 'Tổng') {
+      return res.status(400).json({ message: 'Cách tính điểm không hợp lệ', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
+    const newCertificate = new Certificate({ 
+      Loai, 
+      TenChungChi, 
+      LePhiThi, 
+      HocPhi, 
+      ThoiHan, 
+      DiemToiThieu, 
+      DiemToiDa, 
+      CachTinhDiem 
+    })
     await newCertificate.save()
 
     const history = new CertificateHistory({
@@ -106,9 +123,9 @@ const getCertificates = async (req, res) => {
 const updateCertificate = async (req, res) => {
   try {
     const { id } = req.params
-    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa } = req.body
+    const { Loai, TenChungChi, LePhiThi, HocPhi, ThoiHan, DiemToiThieu, DiemToiDa, CachTinhDiem } = req.body
 
-    const allowedFields = ['Loai', 'TenChungChi', 'LePhiThi', 'HocPhi', 'ThoiHan', 'DiemToiThieu', 'DiemToiDa']
+    const allowedFields = ['Loai', 'TenChungChi', 'LePhiThi', 'HocPhi', 'ThoiHan', 'DiemToiThieu', 'DiemToiDa', 'CachTinhDiem']
 
     // Kiểm tra chứng chỉ đã tồn tại chưa
     const existingAnotherCert = await Certificate.findOne({
@@ -141,6 +158,10 @@ const updateCertificate = async (req, res) => {
       })
     }
 
+    if (CachTinhDiem !== 'Trung bình' && CachTinhDiem !== 'Tổng') {
+      return res.status(400).json({ message: 'Cách tính điểm không hợp lệ', error: 'SAI_MIEN_GIA_TRI' })
+    }
+
     const oldCert = await Certificate.findById(id)
 
     // Tiến hành cập nhật
@@ -153,7 +174,8 @@ const updateCertificate = async (req, res) => {
         HocPhi,
         ThoiHan,
         DiemToiThieu,
-        DiemToiDa
+        DiemToiDa,
+        CachTinhDiem
       },
       {
         new: true,

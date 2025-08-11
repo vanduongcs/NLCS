@@ -37,6 +37,13 @@ const CertificateSchema = new mongoose.Schema({
     required: true,
     min: 1,
     default: 1
+  },
+  CachTinhDiem: {
+    type: String,
+    required: true,
+    trim: true,
+    enum: ['Trung bình', 'Tổng'],
+    default: 'Trung bình'
   }
 })
 

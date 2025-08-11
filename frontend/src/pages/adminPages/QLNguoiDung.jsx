@@ -3,6 +3,7 @@ import Swal from 'sweetalert2'
 import API from '../../api.jsx'
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
 import AccountForm from '../../components/Form/AccountForm.jsx'
+import ImportExcel from '../../components/ImportExcel/ImportExcel.jsx'
 import IconButton from '@mui/material/IconButton'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import HistoryIcon from '@mui/icons-material/History'
@@ -11,7 +12,7 @@ import fetchCollectionHistory from '../../components/fetchCollectionHistory/fetc
 
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
-
+import Box from '@mui/material/Box'
 
 function QLNguoiDung() {
   // Hằng lưu trữ địa chỉ API và các chức năng
@@ -33,6 +34,10 @@ function QLNguoiDung() {
   const [certificates, setCertificates] = useState([])
   const [Accounts, SetAccounts] = useState([])
 
+  // Cache tên chứng chỉ đã nhận theo userId để hiển thị trực tiếp
+  // { [userId]: { daNhan: string[], chuaNhan: {value,label}[] } }
+  const [certNamesByUser, setCertNamesByUser] = useState({})
+
   // Lưu trữ dữ liệu chỉnh sửa account
   const [TenHienThi, SetTenHienThi] = useState('')
   const [TenTaiKhoan, SetTenTaiKhoan] = useState('')
@@ -48,6 +53,9 @@ function QLNguoiDung() {
   const [modalColumns, setModalColumns] = useState([])
   const [modalAccountName, setModalAccountName] = useState(null)
   const [modalType, setModalType] = useState('')
+
+  // State cho ImportExcel
+  const [importExcelOpen, setImportExcelOpen] = useState(false)
   const [modalOptions, setModalOptions] = useState([])
 
   const formStates = {
@@ -59,6 +67,46 @@ function QLNguoiDung() {
     SDT, SetSDT
   }
 
+  // ===== Helpers hiển thị tên + nút modal trong cùng một ô =====
+  const toCourseNames = (ids) =>
+    (ids || []).map(id => (courses.find(c => c._id === id)?.TenKhoaHoc || id))
+
+  const toExamNames = (ids) =>
+    (ids || []).map(id => (exams.find(e => e._id === id)?.TenKyThi || id))
+
+  // MỚI: mỗi tên xuống dòng, bọc bởi [ và ]
+  const renderListWithButton = (names, onClick) => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        justifyContent: 'space-between',
+        alignItems: 'center', // căn giữa ngang cả tên và nút
+        textAlign: 'center'   // căn giữa text tên
+      }}
+    >
+      <Box sx={{ flex: 1 }}>
+        {names && names.length ? (
+          names.map((n, idx) => (
+            <Box key={idx} component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+              [{n}]
+            </Box>
+          ))
+        ) : (
+          '___'
+        )}
+      </Box>
+      <Box sx={{ mt: 1 }}>
+        <IconButton onClick={onClick} size="small">
+          <ListAltIcon color="primary" />
+        </IconButton>
+      </Box>
+    </Box>
+  )
+
+
+  // ===== Mở modal chi tiết =====
   const handleOpenModal = (type, row) => {
     setModalType(type)
     setModalAccountName(row.TenTaiKhoan)
@@ -95,23 +143,20 @@ function QLNguoiDung() {
 
   // Convert từ id sang tên hiển thị
   const getDisplayNameById = (id, type) => {
-    // Nếu không có id, trả về '___'
     if (!id) return '___'
-
-    // Tìm kiếm trong các mảng tương ứng với loại dữ liệu
-    // Thực hiện find trong các mảng courses, exams, certificates
-    // Nếu tìm thấy tên tương ứng sẽ trả về tên đó
-    // Nếu không tìm thấy, trả về id
     switch (type) {
-      case 'KhoaHocDaThamGia':
+      case 'KhoaHocDaThamGia': {
         const course = courses.find(c => c._id === id)
         return course ? course.TenKhoaHoc : id
-      case 'KyThiDaThamGia':
+      }
+      case 'KyThiDaThamGia': {
         const exam = exams.find(e => e._id === id)
         return exam ? exam.TenKyThi : id
-      case 'ChungChiDaNhan':
+      }
+      case 'ChungChiDaNhan': {
         const certificate = certificates.find(c => c._id === id)
         return certificate ? certificate.TenChungChi : id
+      }
       default:
         return id
     }
@@ -121,12 +166,10 @@ function QLNguoiDung() {
   const formatHistoryValue = (value, fieldName) => {
     if (!value) return '___'
 
-    // Nếu là array of IDs
     if (Array.isArray(value)) {
       return value.map(id => getDisplayNameById(id, fieldName)).join(', ')
     }
 
-    // Nếu là string ID đơn lẻ cho các trường có thể chứa ID
     if (typeof value === 'string' &&
       (fieldName === 'KhoaHocDaThamGia' ||
         fieldName === 'KyThiDaThamGia' ||
@@ -134,7 +177,6 @@ function QLNguoiDung() {
       return getDisplayNameById(value, fieldName)
     }
 
-    // Nếu là object
     if (typeof value === 'object') {
       return JSON.stringify(value)
     }
@@ -142,7 +184,7 @@ function QLNguoiDung() {
     return String(value)
   }
 
-  // Từ các trường dữ liệu trong Account, lấy tên hiển thị tương ứng với nó (từ không dấu thành có dấu)
+  // Từ các trường dữ liệu trong Account, lấy tên hiển thị tương ứng
   const getFieldDisplayName = (field) => {
     const fieldNames = {
       'TenHienThi': 'Tên hiển thị',
@@ -163,15 +205,12 @@ function QLNguoiDung() {
       const accountHandle = await API.get(`/${routeAddress}/${funcGet}/${dataNeeded}`)
       const accountDataBeforeAdd = accountHandle.data[type] || []
 
-      // Thêm selectedId vào accountDataBeforeAdd
       const updatedData = [...accountDataBeforeAdd, selectedId]
 
-      // Cập nhật dữ liệu mới
       await API.put(`/${routeAddress}/${funcUpdate}/${dataNeeded}`, {
         [type]: updatedData
       })
 
-      // cập nhật hiển thị modal
       const currentAccount = Accounts.find(acc => acc.TenTaiKhoan === dataNeeded)
       if (currentAccount) {
         await fetchRelatedDataAndSetModal(currentAccount._id, {
@@ -191,13 +230,8 @@ function QLNguoiDung() {
     }
   }
 
-  // Load lại options bỏ lựa chọn vừa chọn khỏi phần hiển thị
   const handleUpdateModalOptions = (type, addedId) => {
-    if (type === 'KhoaHocDaThamGia') {
-      setModalOptions(prev => prev.filter(option => option.value !== addedId))
-    } else if (type === 'KyThiDaThamGia') {
-      setModalOptions(prev => prev.filter(option => option.value !== addedId))
-    } else if (type === 'ChungChiDaNhan') {
+    if (type === 'KhoaHocDaThamGia' || type === 'KyThiDaThamGia' || type === 'ChungChiDaNhan') {
       setModalOptions(prev => prev.filter(option => option.value !== addedId))
     }
   }
@@ -208,7 +242,6 @@ function QLNguoiDung() {
       const accountDataBeforeDelete = accountHandle.data[type] || []
       let updatedData = []
 
-      // Xác định id cần xóa
       let idToRemove = ''
       if (type === 'ChungChiDaNhan') {
         idToRemove = row.IDKetQua
@@ -217,12 +250,10 @@ function QLNguoiDung() {
       }
       updatedData = accountDataBeforeDelete.filter(item => item !== idToRemove)
 
-      // Cập nhật lại dữ liệu
       await API.put(`/${routeAddress}/${funcUpdate}/${accountName}`, {
         [type]: updatedData
       })
 
-      // Fetch lại dữ liệu modal
       const currentAccount = Accounts.find(acc => acc.TenTaiKhoan === accountName)
       if (currentAccount) {
         await fetchRelatedDataAndSetModal(currentAccount._id, {
@@ -231,7 +262,6 @@ function QLNguoiDung() {
         }, type)
       }
     } catch (error) {
-      // Xử lý lỗi
       Swal.fire({
         icon: 'error',
         title: 'Lỗi khi xóa dữ liệu liên quan',
@@ -242,11 +272,9 @@ function QLNguoiDung() {
     }
   }
 
-  // Hàm tổng quát fetch dữ liệu liên quan và set modal cho 3 loại
   const fetchRelatedDataAndSetModal = async (userId, row, type) => {
     try {
       if (type === 'ChungChiDaNhan') {
-        // --- Xử lý chứng chỉ đã nhận ---
         const res = await API.get(`/certReceived/tat-ca-chung-chi-da-nhan/${userId}`)
         const allCerts = res.data
         const daNhan = allCerts.filter(cert => cert.TrangThai === 'Đã lấy')
@@ -289,7 +317,6 @@ function QLNguoiDung() {
       } else if (type === 'KhoaHocDaThamGia') {
         const newCourses = await API.get('/course/tat-ca-khoa-on')
         const coursesUse = newCourses.data
-        // Lọc ra những dòng trong courses mà userId includes trong mảng IDTaiKhoan của course bằng cách dùng .filter
         const KhoaHocNDThamGia = coursesUse.filter(course => course.IDTaiKhoan?.includes(userId))
         if (!KhoaHocNDThamGia || KhoaHocNDThamGia.length === 0) {
           setModalData([])
@@ -322,7 +349,6 @@ function QLNguoiDung() {
       } else if (type === 'KyThiDaThamGia') {
         const newExams = await API.get('/exam/tat-ca-ky-thi')
         const examsUse = newExams.data
-        // Lọc ra những dòng trong courses mà userId includes trong mảng IDTaiKhoan của course bằng cách dùng .filter
         const KyThiNDThamGia = examsUse.filter(exam => exam.IDTaiKhoan?.includes(userId))
         if (!KyThiNDThamGia || KyThiNDThamGia.length === 0) {
           setModalData([])
@@ -387,10 +413,10 @@ function QLNguoiDung() {
     setEditingAccount(null)
   }
 
-  // API functions
+  // ======= API functions =======
   const fetchData = async () => {
     try {
-      const [accountsRes, coursesRes, examsRes, certificatesRes, certReceivedRes] = await Promise.all([
+      const [accountsRes, coursesRes, examsRes, certificatesRes] = await Promise.all([
         API.get(`/${routeAddress}/${funcFindAll}`),
         API.get('/course/tat-ca-khoa-on'),
         API.get('/exam/tat-ca-ky-thi'),
@@ -401,9 +427,41 @@ function QLNguoiDung() {
       setCourses(coursesRes.data)
       setExams(examsRes.data)
       setCertificates(certificatesRes.data)
+
+      // Preload tên chứng chỉ đã nhận (Đã lấy) theo user
+      await preloadCertNames(accountsRes.data)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Lỗi khi tải dữ liệu', message)
+    }
+  }
+
+  const preloadCertNames = async (accounts) => {
+    try {
+      const entries = await Promise.all(
+        (accounts || []).map(async (acc) => {
+          try {
+            const res = await API.get(`/certReceived/tat-ca-chung-chi-da-nhan/${acc._id}`)
+            const all = res.data || []
+            const daNhan = all
+              .filter(x => x.TrangThai === 'Đã lấy')
+              .map(x => x?.IDKetQua?.IDKyThi?.IDChungChi?.TenChungChi)
+              .filter(Boolean)
+            const chuaNhanOptions = all
+              .filter(x => x.TrangThai === 'Chưa lấy')
+              .map(x => ({
+                value: x?.IDKetQua?._id,
+                label: x?.IDKetQua?.IDKyThi?.TenKyThi || '___'
+              }))
+            return [acc._id, { daNhan, chuaNhan: chuaNhanOptions }]
+          } catch {
+            return [acc._id, { daNhan: [], chuaNhan: [] }]
+          }
+        })
+      )
+      setCertNamesByUser(Object.fromEntries(entries))
+    } catch {
+      setCertNamesByUser({})
     }
   }
 
@@ -411,6 +469,7 @@ function QLNguoiDung() {
     try {
       const res = await API.get(`/${routeAddress}/${funcFindAll}`)
       SetAccounts(res.data)
+      await preloadCertNames(res.data)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
       showError('Không thể tải danh sách tài khoản', message)
@@ -444,6 +503,130 @@ function QLNguoiDung() {
     }
   }
 
+  // Hàm xử lý Import Excel
+  const handleImportExcel = async (data) => {
+    try {
+      // Validate dữ liệu trước khi gửi
+      const validationErrors = []
+
+      data.forEach((row, index) => {
+        const rowNumber = index + 2 // +2 vì Excel bắt đầu từ 1 và có header
+
+        if (!row.TenHienThi || row.TenHienThi.trim() === '') {
+          validationErrors.push(`Hàng ${rowNumber}: Thiếu tên hiển thị`)
+        }
+
+        if (!row.TenTaiKhoan || row.TenTaiKhoan.trim() === '') {
+          validationErrors.push(`Hàng ${rowNumber}: Thiếu tên tài khoản`)
+        }
+
+        if (!row.CCCD || row.CCCD.trim() === '') {
+          validationErrors.push(`Hàng ${rowNumber}: Thiếu CCCD`)
+        } else if (row.CCCD.toString().length !== 12) {
+          validationErrors.push(`Hàng ${rowNumber}: CCCD phải có 12 chữ số`)
+        }
+
+        if (!row.SDT || row.SDT.trim() === '') {
+          validationErrors.push(`Hàng ${rowNumber}: Thiếu số điện thoại`)
+        } else if (row.SDT.toString().length !== 10) {
+          validationErrors.push(`Hàng ${rowNumber}: Số điện thoại phải có 10 chữ số`)
+        }
+
+        if (!row.MatKhau || row.MatKhau.trim() === '') {
+          validationErrors.push(`Hàng ${rowNumber}: Thiếu mật khẩu`)
+        }
+      })
+
+      if (validationErrors.length > 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Dữ liệu không hợp lệ',
+          html: `<div style="text-align: left;">
+            <strong>Các lỗi cần sửa:</strong><br>
+            ${validationErrors.slice(0, 10).map(error => `• ${error}`).join('<br>')}
+            ${validationErrors.length > 10 ? `<br><strong>... và ${validationErrors.length - 10} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '600px'
+        })
+        return
+      }
+
+      const results = []
+      const errors = []
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i]
+        const rowNumber = i + 2
+
+        try {
+          const accountData = {
+            TenHienThi: row.TenHienThi.trim(),
+            TenTaiKhoan: row.TenTaiKhoan.trim(),
+            Loai: row.Loai || 'user',
+            CCCD: row.CCCD.toString().trim(),
+            SDT: row.SDT.toString().trim(),
+            MatKhau: row.MatKhau.trim()
+          }
+
+          await API.post(`/${routeAddress}/${funcAdd}`, accountData)
+          results.push({ rowNumber, success: true })
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || error.message || 'Lỗi không xác định'
+          errors.push({ rowNumber, error: errorMessage })
+        }
+      }
+
+      if (errors.length === 0) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công',
+          text: `Đã nhập thành công ${results.length} tài khoản`,
+          confirmButtonColor: '#1976d2'
+        })
+      } else if (results.length === 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Tất cả bản ghi đều lỗi',
+          html: `<div style="text-align: left;">
+            <strong>Các lỗi:</strong><br>
+            ${errors.slice(0, 5).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 5 ? `<br><strong>... và ${errors.length - 5} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '600px'
+        })
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Hoàn thành với một số lỗi',
+          html: `<div style="text-align: left;">
+            <strong>Thành công:</strong> ${results.length} bản ghi<br>
+            <strong>Lỗi:</strong> ${errors.length} bản ghi<br><br>
+            <strong>Các lỗi:</strong><br>
+            ${errors.slice(0, 5).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 5 ? `<br><strong>... và ${errors.length - 5} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '600px'
+        })
+      }
+
+      fetchAccounts()
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi nhập dữ liệu',
+        text: 'Có lỗi hệ thống xảy ra',
+        confirmButtonColor: '#1976d2'
+      })
+    }
+  }
+
+  const handleOpenImportExcel = () => {
+    setImportExcelOpen(true)
+  }
+
   const handleDelete = async (id) => {
     try {
       const result = await Swal.fire({
@@ -468,7 +651,7 @@ function QLNguoiDung() {
   }
 
   const handleEdit = (row) => {
-    setEditingAccount(row) // <-- Thêm dòng này
+    setEditingAccount(row)
     SetTenHienThi(row.TenHienThi)
     SetTenTaiKhoan(row.TenTaiKhoan)
     SetCCCD(row.CCCD || '')
@@ -481,7 +664,7 @@ function QLNguoiDung() {
     fetchData()
   }, [])
 
-  // Table configuration
+  // ===== Cấu hình cột bảng =====
   const columns = [
     { label: 'Tên', key: 'TenHienThi' },
     { label: 'Căn cước', key: 'CCCD' },
@@ -489,36 +672,36 @@ function QLNguoiDung() {
     { label: 'Tài khoản', key: 'TenTaiKhoan' },
     { label: 'Vai trò', key: 'Loai' },
     { label: 'Mật khẩu', key: 'MatKhau' },
+
+    // Hiển thị tên + nút ở cuối ô, mỗi tên xuống dòng và bọc [ ]
     {
       label: 'Khóa học đã tham gia',
       key: 'KhoaHocDaThamGia',
-      align: 'center',
-      render: (value, row) => (
-        <IconButton onClick={() => handleOpenModal('KhoaHocDaThamGia', row)}>
-          <ListAltIcon color="primary" />
-        </IconButton>
-      )
+      align: 'left',
+      render: (value, row) => {
+        const names = toCourseNames(row.KhoaHocDaThamGia)
+        return renderListWithButton(names, () => handleOpenModal('KhoaHocDaThamGia', row))
+      }
     },
     {
       label: 'Kỳ thi đã tham gia',
       key: 'KyThiDaThamGia',
-      align: 'center',
-      render: (value, row) => (
-        <IconButton onClick={() => handleOpenModal('KyThiDaThamGia', row)}>
-          <ListAltIcon color="primary" />
-        </IconButton>
-      )
+      align: 'left',
+      render: (value, row) => {
+        const names = toExamNames(row.KyThiDaThamGia)
+        return renderListWithButton(names, () => handleOpenModal('KyThiDaThamGia', row))
+      }
     },
     {
       label: 'Chứng chỉ đã nhận',
       key: 'ChungChiDaNhan',
-      align: 'center',
-      render: (value, row) => (
-        <IconButton onClick={() => handleOpenModal('ChungChiDaNhan', row)}>
-          <WorkspacePremiumIcon color="primary" />
-        </IconButton>
-      )
+      align: 'left',
+      render: (value, row) => {
+        const names = certNamesByUser[row._id]?.daNhan || []
+        return renderListWithButton(names, () => handleOpenModal('ChungChiDaNhan', row))
+      }
     },
+
     {
       label: 'Lịch sử',
       key: 'LichSu',
@@ -538,7 +721,6 @@ function QLNguoiDung() {
       key: 'TenHienThi',
       label: 'Tên người dùng',
       type: 'text'
-
     },
     {
       key: 'TenTaiKhoan',
@@ -574,8 +756,8 @@ function QLNguoiDung() {
         handleDelete={handleDelete}
         resetForm={resetForm}
         FormName={AccountForm}
+        onImportExcel={handleOpenImportExcel}
       />
-      {/* Thêm RelatedDataModal này */}
       <RelatedDataModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -588,6 +770,13 @@ function QLNguoiDung() {
         onAdd={handleAddRelated}
         onDelete={handleDeleteRelated}
         onUpdateOptions={handleUpdateModalOptions}
+      />
+      <ImportExcel
+        open={importExcelOpen}
+        onClose={() => setImportExcelOpen(false)}
+        onImport={handleImportExcel}
+        columnsCanEdit={columnsCanEdit}
+        pageContent={pageContent}
       />
     </>
   )

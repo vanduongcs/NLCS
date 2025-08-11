@@ -41,7 +41,21 @@ const getCertReceivedByUserId = async (req, res) => {
   }
 }
 
+// Add this method to your existing controller
+const getAllCertReceived = async (req, res) => {
+  try {
+    const certReceived = await CertReceived.find()
+      .populate('IDNguoiDung')
+      .populate('IDKetQua')
+    res.status(200).json(certReceived)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// Don't forget to export the new method
 export default {
   updateCertStatus,
-  getCertReceivedByUserId
+  getCertReceivedByUserId,
+  getAllCertReceived
 }

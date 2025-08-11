@@ -6,7 +6,7 @@ import Button from '@mui/material/Button'
 // Custom
 import FieldCustome from '../FieldCustome/FieldCustome.jsx'
 
-function CourseForm({ columnsCanEdit, formStates, pageContent, handleAdd, handleUpdate, isEditing, resetForm }) {
+function CourseForm({ columnsCanEdit, formStates, pageContent, handleAdd, handleUpdate, isEditing, resetForm, onImportExcel }) {
   return (
     <Box
       sx={{
@@ -34,6 +34,8 @@ function CourseForm({ columnsCanEdit, formStates, pageContent, handleAdd, handle
         ))}
 
         <Button sx={{ mt: '20px', width: '50%' }} onClick={handleAdd} variant="contained" disabled={isEditing}>Thêm</Button>
+
+        <Button sx={{ mt: '10px', width: '50%' }} onClick={onImportExcel} variant="contained" color="info">Nhập thông qua file Excel</Button>
 
         <Button sx={{ mt: '10px', width: '50%' }} onClick={handleUpdate} variant="contained" disabled={!isEditing} color="success">Cập nhật</Button>
 

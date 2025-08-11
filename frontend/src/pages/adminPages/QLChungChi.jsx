@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
 import CertificateForm from '../../components/Form/CertificateForm.jsx'
+import ImportExcel from '../../components/ImportExcel/ImportExcel.jsx'
 import HistoryIcon from '@mui/icons-material/History'
 import IconButton from '@mui/material/IconButton'
 import API from '../../api.jsx'
@@ -31,11 +32,15 @@ function QLChungChi() {
   const [ThoiHan, SetThoiHan] = useState('')
   const [DiemToiThieu, SetDiemToiThieu] = useState('')
   const [DiemToiDa, SetDiemToiDa] = useState('')
+  const [CachTinhDiem, SetCachTinhDiem] = useState('Trung bình')
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalData, setModalData] = useState([])
   const [modalColumns, setModalColumns] = useState([])
+
+  // State cho ImportExcel
+  const [importExcelOpen, setImportExcelOpen] = useState(false)
 
   const formStates = {
     Loai, SetLoai,
@@ -44,7 +49,8 @@ function QLChungChi() {
     HocPhi, SetHocPhi,
     ThoiHan, SetThoiHan,
     DiemToiThieu, SetDiemToiThieu,
-    DiemToiDa, SetDiemToiDa
+    DiemToiDa, SetDiemToiDa,
+    CachTinhDiem, SetCachTinhDiem
   }
 
   const createCertificateData = () => ({
@@ -54,13 +60,15 @@ function QLChungChi() {
     HocPhi: Number(HocPhi),
     ThoiHan: Number(ThoiHan),
     DiemToiThieu: Number(DiemToiThieu),
-    DiemToiDa: Number(DiemToiDa)
+    DiemToiDa: Number(DiemToiDa),
+    CachTinhDiem
   })
 
   const resetForm = () => {
     SetTenChungChi('')
     SetDiemToiThieu('')
     SetDiemToiDa('')
+    SetCachTinhDiem('Trung bình')
     setEditingCertificate(null)
   }
 
@@ -133,6 +141,7 @@ function QLChungChi() {
     SetThoiHan(row.ThoiHan)
     SetDiemToiThieu(row.DiemToiThieu)
     SetDiemToiDa(row.DiemToiDa)
+    SetCachTinhDiem(row.CachTinhDiem || 'Trung bình')
   }
 
   const handleUpdate = async () => {
@@ -143,6 +152,49 @@ function QLChungChi() {
     } catch (error) {
       showError(error.response?.data?.message || 'Không thể cập nhật chứng chỉ')
     }
+  }
+
+  // Hàm xử lý Import Excel
+  const handleImportExcel = async (data) => {
+    try {
+      const importPromises = data.map(async (row) => {
+        const certificateData = {
+          Loai: row.Loai || 'Ngoại ngữ',
+          TenChungChi: row.TenChungChi || '',
+          LePhiThi: row.LePhiThi ? Number(row.LePhiThi) : 0,
+          HocPhi: row.HocPhi ? Number(row.HocPhi) : 0,
+          ThoiHan: row.ThoiHan ? Number(row.ThoiHan) : 0,
+          DiemToiThieu: row.DiemToiThieu ? Number(row.DiemToiThieu) : 0,
+          DiemToiDa: row.DiemToiDa ? Number(row.DiemToiDa) : 10,
+          CachTinhDiem: row.CachTinhDiem || 'Trung bình'
+        }
+
+        return API.post(`/${routeAddress}/${funcAdd}`, certificateData)
+      })
+
+      await Promise.all(importPromises)
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: `Đã nhập thành công ${data.length} chứng chỉ`,
+        confirmButtonColor: '#1976d2'
+      })
+      
+      fetchCertificates()
+    } catch (error) {
+      console.error('Lỗi nhập dữ liệu:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: error.response?.data?.message || 'Có lỗi xảy ra khi nhập dữ liệu',
+        confirmButtonColor: '#1976d2'
+      })
+    }
+  }
+
+  const handleOpenImportExcel = () => {
+    setImportExcelOpen(true)
   }
 
   // Hàm showError có thể được cập nhật để linh hoạt hơn
@@ -165,7 +217,8 @@ function QLChungChi() {
       'HocPhi': 'Học phí',
       'ThoiHan': 'Thời hạn',
       'DiemToiThieu': 'Điểm tối thiểu',
-      'DiemToiDa': 'Điểm tối đa'
+      'DiemToiDa': 'Điểm tối đa',
+      'CachTinhDiem': 'Cách tính điểm'
     }
     return fieldNames[field] || field
   }
@@ -190,6 +243,7 @@ function QLChungChi() {
     { label: 'Thời hạn', align: 'center', key: 'ThoiHan' },
     { label: 'Điểm tối thiểu', align: 'center', key: 'DiemToiThieu' },
     { label: 'Điểm tối đa', align: 'center', key: 'DiemToiDa' },
+    { label: 'Cách tính điểm', align: 'center', key: 'CachTinhDiem' },
     {
       label: 'Lịch sử',
       key: 'LichSu',
@@ -217,7 +271,16 @@ function QLChungChi() {
     { label: 'Học phí', key: 'HocPhi', type: 'number' },
     { label: 'Thời hạn', key: 'ThoiHan', type: 'number' },
     { label: 'Điểm tối thiểu', key: 'DiemToiThieu', type: 'number' },
-    { label: 'Điểm tối đa', key: 'DiemToiDa', type: 'number' }
+    { label: 'Điểm tối đa', key: 'DiemToiDa', type: 'number' },
+    { 
+      label: 'Cách tính điểm', 
+      key: 'CachTinhDiem', 
+      type: 'select',
+      options: [
+        { value: 'Trung bình', label: 'Trung bình' },
+        { value: 'Tổng', label: 'Tổng' }
+      ]
+    }
   ]
 
   return (
@@ -235,6 +298,7 @@ function QLChungChi() {
         handleDelete={handleDelete}
         resetForm={resetForm}
         FormName={CertificateForm}
+        onImportExcel={handleOpenImportExcel}
       />
       <RelatedDataModal
         open={modalOpen}
@@ -248,6 +312,13 @@ function QLChungChi() {
         onAdd={null} // Không cần cho lịch sử
         onDelete={null} // Không cần cho lịch sử
         onUpdateOptions={null}
+      />
+      <ImportExcel
+        open={importExcelOpen}
+        onClose={() => setImportExcelOpen(false)}
+        onImport={handleImportExcel}
+        columnsCanEdit={columnsCanEdit}
+        pageContent={pageContent}
       />
     </>
   )

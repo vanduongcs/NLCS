@@ -1,11 +1,23 @@
-import Typography from '@mui/material/Typography'
-import Paper from '@mui/material/Paper'
-import Divider from '@mui/material/Divider'
+import { Paper, Typography, Divider } from '@mui/material'
 
 const HienThiKetQua = ({ resultInfo }) => {
+  if (!resultInfo.hopLe) {
+    return (
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" fontWeight="bold" color="error">
+          Kết quả kiểm tra: <strong>Không hợp lệ</strong>
+        </Typography>
+        <Divider sx={{ my: 2 }} />
+        <Typography>
+          {resultInfo.message || 'Không tìm thấy thông tin chứng chỉ'}
+        </Typography>
+      </Paper>
+    )
+  }
+
   return (
     <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" fontWeight="bold">
+      <Typography variant="h6" fontWeight="bold" color="success.main">
         Kết quả kiểm tra: <strong>Hợp lệ</strong>
       </Typography>
       <Divider sx={{ my: 2 }} />
@@ -20,8 +32,8 @@ const HienThiKetQua = ({ resultInfo }) => {
       </Typography>
       <Typography>
         <strong>Trạng thái:</strong>{' '}
-        <span style={{ 
-          color: resultInfo.trangThai === 'Đã lấy' ? 'green' : 'orange' 
+        <span style={{
+          color: resultInfo.trangThai === 'Đã lấy' ? 'green' : 'orange'
         }}>
           {resultInfo.trangThai}
         </span>

@@ -3,6 +3,7 @@ import Swal from 'sweetalert2'
 import API from '../../api.jsx'
 import PageComponent from '../../components/Admin/pageComponent/PageComponent.jsx'
 import ResultForm from '../../components/Form/ResultForm.jsx'
+import ImportExcel from '../../components/ImportExcel/ImportExcel.jsx'
 
 // Thêm import cho History Icon và Modal
 import HistoryIcon from '@mui/icons-material/History'
@@ -40,6 +41,9 @@ function QLKetQua() {
   const [modalColumns, setModalColumns] = useState([])
   const [modalType, setModalType] = useState('LichSu')
 
+  // Thêm state cho ImportExcel
+  const [importExcelOpen, setImportExcelOpen] = useState(false)
+
   const formStates = {
     IDNguoiDung, SetIDNguoiDung,
     IDKyThi, SetIDKyThi,
@@ -52,8 +56,9 @@ function QLKetQua() {
   // Utility functions
   const showError = (message) => {
     Swal.fire({
-      icon: 'error',
-      title: message,
+      icon: 'warning',
+      title: 'Thông báo',
+      text: message,
       confirmButtonText: 'Đóng',
       confirmButtonColor: '#1976d2'
     })
@@ -100,7 +105,7 @@ function QLKetQua() {
     }
     if (fieldName === 'IDKyThi') {
       const valueDisplay = exams.find(e => e._id === value)
-      return valueDisplay.TenKyThi
+      return valueDisplay?.TenKyThi || value
     }
     return String(value)
   }
@@ -143,20 +148,19 @@ function QLKetQua() {
       setResults(resultsRes.data)
       setExams(examsRes.data)
     } catch (error) {
-      showError('Lỗi khi tải dữ liệu')
+      showError(error.response?.data?.message || 'Lỗi khi tải dữ liệu')
     }
   }
 
   const fetchResults = () => {
     API.get(`/${routeAddress}/${funcFindAll}`)
       .then(res => setResults(res.data))
-      .catch(() => showError('Lỗi khi tải kết quả'))
+      .catch((error) => showError(error.response?.data?.message || 'Lỗi khi tải kết quả'))
   }
 
   // Event handlers
   const handleAdd = () => {
-    const exam = exams.find(e => e._id === IDKyThi)
-
+    // const exam = exams.find(e => e._id === IDKyThi) // (không dùng, giữ nguyên cấu trúc cũ)
     API.post(`/${routeAddress}/${funcAdd}`, createResultData())
       .then(() => {
         fetchResults()
@@ -188,8 +192,7 @@ function QLKetQua() {
   }
 
   const handleUpdate = () => {
-    const exam = exams.find(e => e._id === IDKyThi)
-
+    // const exam = exams.find(e => e._id === IDKyThi) // (không dùng, giữ nguyên cấu trúc cũ)
     API.put(`/${routeAddress}/${funcUpdate}/${editingResult}`, createResultData())
       .then(() => {
         fetchResults()
@@ -199,6 +202,60 @@ function QLKetQua() {
         const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
         showError(message)
       })
+  }
+
+  // Hàm xử lý Import Excel
+  const handleImportExcel = async (data) => {
+    try {
+      const importPromises = data.map(async (row) => {
+        // Tìm IDNguoiDung từ TenHienThi
+        const account = accounts.find(acc => acc.TenHienThi === row.IDNguoiDung)
+        if (!account) {
+          throw new Error(`Không tìm thấy người dùng: ${row.IDNguoiDung}`)
+        }
+
+        // Tìm IDKyThi từ TenKyThi
+        const exam = exams.find(e => e.TenKyThi === row.IDKyThi)
+        if (!exam) {
+          throw new Error(`Không tìm thấy kỳ thi: ${row.IDKyThi}`)
+        }
+
+        const resultData = {
+          IDNguoiDung: account._id,
+          IDKyThi: exam._id,
+          Diem1: row.Diem1 ? Number(row.Diem1) : undefined,
+          Diem2: row.Diem2 ? Number(row.Diem2) : undefined,
+          Diem3: row.Diem3 ? Number(row.Diem3) : undefined,
+          Diem4: row.Diem4 ? Number(row.Diem4) : undefined
+        }
+
+        return API.post(`/${routeAddress}/${funcAdd}`, resultData)
+      })
+
+      await Promise.all(importPromises)
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: `Đã nhập thành công ${data.length} bản ghi`,
+        confirmButtonColor: '#1976d2'
+      })
+
+      fetchResults()
+    } catch (error) {
+      console.error('Lỗi nhập dữ liệu:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        // HIỂN THỊ MESSAGE TỪ BACKEND NẾU CÓ
+        text: (error?.response?.data?.message) || error?.message || 'Có lỗi xảy ra khi nhập dữ liệu',
+        confirmButtonColor: '#1976d2'
+      })
+    }
+  }
+
+  const handleOpenImportExcel = () => {
+    setImportExcelOpen(true)
   }
 
   useEffect(() => {
@@ -232,14 +289,16 @@ function QLKetQua() {
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ]
 
-  // hàm getOptionsWithAccount tìm các exam có _id trùng với KyThiDaThamGia trong account tương ứng với giá trị của IDNguoiDung
+  // hàm getOptionsWithAccount: chỉ hiển thị kỳ thi mà user đã tham gia
   const getOptionsWithAccount = (IDNguoiDung) => {
     const account = accounts.find(acc => acc._id === IDNguoiDung)
     if (!account || !account.KyThiDaThamGia) return []
-    return exams.filter(exam => account.KyThiDaThamGia.includes(exam._id))
+    return exams
+      .filter(exam => account.KyThiDaThamGia.includes(exam._id))
       .map(exam => ({ value: exam._id, label: exam.TenKyThi }))
   }
 
+  // Columns cho form thông thường
   const columnsCanEdit = [
     {
       label: 'Người dùng',
@@ -253,6 +312,16 @@ function QLKetQua() {
       type: 'autocomplete',
       options: getOptionsWithAccount(IDNguoiDung)
     },
+    { label: 'Điểm 1', key: 'Diem1', type: 'number' },
+    { label: 'Điểm 2', key: 'Diem2', type: 'number' },
+    { label: 'Điểm 3', key: 'Diem3', type: 'number' },
+    { label: 'Điểm 4', key: 'Diem4', type: 'number' }
+  ]
+
+  // Columns cho Import Excel (dùng tên thay vì ID)
+  const columnsForImport = [
+    { label: 'Người dùng', key: 'IDNguoiDung', type: 'text' },
+    { label: 'Kỳ thi', key: 'IDKyThi', type: 'text' },
     { label: 'Điểm 1', key: 'Diem1', type: 'number' },
     { label: 'Điểm 2', key: 'Diem2', type: 'number' },
     { label: 'Điểm 3', key: 'Diem3', type: 'number' },
@@ -274,6 +343,7 @@ function QLKetQua() {
         handleDelete={handleDelete}
         resetForm={resetForm}
         FormName={ResultForm}
+        onImportExcel={handleOpenImportExcel}
       />
       <RelatedDataModal
         open={modalOpen}
@@ -287,6 +357,13 @@ function QLKetQua() {
         onAdd={null}
         onDelete={null}
         onUpdateOptions={null}
+      />
+      <ImportExcel
+        open={importExcelOpen}
+        onClose={() => setImportExcelOpen(false)}
+        onImport={handleImportExcel}
+        columnsCanEdit={columnsForImport}
+        pageContent={pageContent}
       />
     </>
   )
