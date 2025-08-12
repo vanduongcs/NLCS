@@ -20,9 +20,24 @@ function QLChungChi() {
   const funcDelete = 'xoa-chung-chi'
   const historyAddress = 'certificateHistory'
 
+  // Top-most SweetAlert helper
+  const fireTopSwal = (opts) =>
+    Swal.fire({
+      ...opts,
+      didOpen: (el) => {
+        if (el?.parentElement) el.parentElement.style.zIndex = 20000
+      }
+    })
+
+  // Safe date renderers
+  const formatDateTimeCell = (v) => {
+    if (!v) return '___'
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? '___' : d.toLocaleString('vi-VN')
+  }
+
   // State
   const [editingCertificate, setEditingCertificate] = useState(null)
-
   const [certificates, setCertificates] = useState([])
 
   const [TenChungChi, SetTenChungChi] = useState('')
@@ -84,7 +99,7 @@ function QLChungChi() {
       setModalTitle('Lịch sử thay đổi')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'ThoiGian', label: 'Thời gian', render: formatDateTimeCell },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu' },
         { key: 'DLTruoc', label: 'Giá trị trước' },
         { key: 'DLSau', label: 'Giá trị sau' }
@@ -111,7 +126,7 @@ function QLChungChi() {
   }
 
   const handleDelete = async (id) => {
-    Swal.fire({
+    fireTopSwal({
       title: 'Xác nhận xóa?',
       text: 'Bạn có chắc muốn xóa chứng chỉ này?',
       icon: 'warning',
@@ -168,23 +183,20 @@ function QLChungChi() {
           DiemToiDa: row.DiemToiDa ? Number(row.DiemToiDa) : 10,
           CachTinhDiem: row.CachTinhDiem || 'Trung bình'
         }
-
         return API.post(`/${routeAddress}/${funcAdd}`, certificateData)
       })
 
       await Promise.all(importPromises)
-      
-      Swal.fire({
+      fireTopSwal({
         icon: 'success',
         title: 'Thành công',
         text: `Đã nhập thành công ${data.length} chứng chỉ`,
         confirmButtonColor: '#1976d2'
       })
-      
       fetchCertificates()
     } catch (error) {
       console.error('Lỗi nhập dữ liệu:', error)
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi',
         text: error.response?.data?.message || 'Có lỗi xảy ra khi nhập dữ liệu',
@@ -197,9 +209,8 @@ function QLChungChi() {
     setImportExcelOpen(true)
   }
 
-  // Hàm showError có thể được cập nhật để linh hoạt hơn
   const showError = (message) => {
-    Swal.fire({
+    fireTopSwal({
       icon: 'warning',
       title: 'Thông báo',
       text: message,
@@ -208,7 +219,6 @@ function QLChungChi() {
     })
   }
 
-  // Hàm chuyển tên trường dữ liệu sang tiếng Việt
   const getFieldDisplayName = (field) => {
     const fieldNames = {
       'TenChungChi': 'Tên chứng chỉ',
@@ -223,8 +233,7 @@ function QLChungChi() {
     return fieldNames[field] || field
   }
 
-  // Hàm format giá trị lịch sử
-  const formatHistoryValue = (value, fieldName) => {
+  const formatHistoryValue = (value) => {
     if (value === null || value === undefined) return '___'
     if (typeof value === 'object') return JSON.stringify(value)
     return String(value)
@@ -234,7 +243,6 @@ function QLChungChi() {
     fetchCertificates()
   }, [])
 
-  // Table configuration
   const columns = [
     { label: 'Loại', key: 'Loai' },
     { label: 'Tên chứng chỉ', key: 'TenChungChi' },
@@ -272,9 +280,9 @@ function QLChungChi() {
     { label: 'Thời hạn', key: 'ThoiHan', type: 'number' },
     { label: 'Điểm tối thiểu', key: 'DiemToiThieu', type: 'number' },
     { label: 'Điểm tối đa', key: 'DiemToiDa', type: 'number' },
-    { 
-      label: 'Cách tính điểm', 
-      key: 'CachTinhDiem', 
+    {
+      label: 'Cách tính điểm',
+      key: 'CachTinhDiem',
       type: 'select',
       options: [
         { value: 'Trung bình', label: 'Trung bình' },
@@ -303,14 +311,14 @@ function QLChungChi() {
       <RelatedDataModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        accountName={null} // Không cần cho chứng chỉ, hoặc truyền row nếu muốn
-        modalOptions={[]} // Không cần cho lịch sử
+        accountName={null}
+        modalOptions={[]}
         type="LichSu"
         title={modalTitle}
         data={modalData}
         columns={modalColumns}
-        onAdd={null} // Không cần cho lịch sử
-        onDelete={null} // Không cần cho lịch sử
+        onAdd={null}
+        onDelete={null}
         onUpdateOptions={null}
       />
       <ImportExcel

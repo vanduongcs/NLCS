@@ -25,6 +25,22 @@ function QLNguoiDung() {
   const funcDelete = 'xoa-tai-khoan'
   const historyAddress = 'accountHistory'
 
+  // Top-most SweetAlert helper
+  const fireTopSwal = (opts) =>
+    Swal.fire({
+      ...opts,
+      didOpen: (el) => {
+        if (el?.parentElement) el.parentElement.style.zIndex = 20000
+      }
+    })
+
+  // Safe date helper
+  const formatDateCell = (v) => {
+    if (!v) return '___'
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? '___' : d.toLocaleDateString('vi-VN')
+  }
+
   // Biến xác định có đang chỉnh sửa hay không
   const [editingAccount, setEditingAccount] = useState(null)
 
@@ -35,7 +51,6 @@ function QLNguoiDung() {
   const [Accounts, SetAccounts] = useState([])
 
   // Cache tên chứng chỉ đã nhận theo userId để hiển thị trực tiếp
-  // { [userId]: { daNhan: string[], chuaNhan: {value,label}[] } }
   const [certNamesByUser, setCertNamesByUser] = useState({})
 
   // Lưu trữ dữ liệu chỉnh sửa account
@@ -82,8 +97,8 @@ function QLNguoiDung() {
         flexDirection: 'column',
         height: '100%',
         justifyContent: 'space-between',
-        alignItems: 'center', // căn giữa ngang cả tên và nút
-        textAlign: 'center'   // căn giữa text tên
+        alignItems: 'center',
+        textAlign: 'center'
       }}
     >
       <Box sx={{ flex: 1 }}>
@@ -105,7 +120,6 @@ function QLNguoiDung() {
     </Box>
   )
 
-
   // ===== Mở modal chi tiết =====
   const handleOpenModal = (type, row) => {
     setModalType(type)
@@ -122,7 +136,7 @@ function QLNguoiDung() {
       })
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'ThoiGian', label: 'Thời gian', render: (v) => formatDateCell(v) },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu' },
         { key: 'DLTruoc', label: 'Giá trị trước' },
         { key: 'DLSau', label: 'Giá trị sau' }
@@ -220,7 +234,7 @@ function QLNguoiDung() {
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi khi thêm dữ liệu liên quan',
         text: message,
@@ -262,7 +276,7 @@ function QLNguoiDung() {
         }, type)
       }
     } catch (error) {
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi khi xóa dữ liệu liên quan',
         text: 'Vui lòng thử lại sau.',
@@ -305,8 +319,8 @@ function QLNguoiDung() {
           { key: 'Diem4', label: 'Điểm 4' },
           { key: 'DiemTK', label: 'Điểm tổng kết' },
           { key: 'KQ', label: 'Kết quả' },
-          { key: 'NgayCap', label: 'Ngày cấp', render: (value) => new Date(value).toLocaleDateString('vi-VN') },
-          { key: 'NgayHetHan', label: 'Ngày hết hạn', render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : 'Không có' }
+          { key: 'NgayCap', label: 'Ngày cấp', render: formatDateCell },
+          { key: 'NgayHetHan', label: 'Ngày hết hạn', render: formatDateCell }
         ])
         setModalOptions(
           chuaNhan.map(cert => ({
@@ -337,8 +351,8 @@ function QLNguoiDung() {
           { key: 'TenKhoaHoc', label: 'Tên khóa học' },
           { key: 'SiSoHienTai', label: 'Sĩ số hiện tại' },
           { key: 'SiSoToiDa', label: 'Sĩ số tối đa' },
-          { key: 'NgayKhaiGiang', label: 'Ngày khai giảng', render: (v) => v ? new Date(v).toLocaleDateString('vi-VN') : '' },
-          { key: 'NgayKetThuc', label: 'Ngày kết thúc', render: (v) => v ? new Date(v).toLocaleDateString('vi-VN') : '' }
+          { key: 'NgayKhaiGiang', label: 'Ngày khai giảng', render: formatDateCell },
+          { key: 'NgayKetThuc', label: 'Ngày kết thúc', render: formatDateCell }
         ])
         setModalOptions(
           KhoaHocNDChuaThamGia.map(course => ({
@@ -368,7 +382,7 @@ function QLNguoiDung() {
           { key: 'TenKyThi', label: 'Tên kỳ thi' },
           { key: 'SiSoHienTai', label: 'Sĩ số hiện tại' },
           { key: 'SiSoToiDa', label: 'Sĩ số tối đa' },
-          { key: 'NgayThi', label: 'Ngày thi', render: (v) => v ? new Date(v).toLocaleDateString('vi-VN') : '' }
+          { key: 'NgayThi', label: 'Ngày thi', render: formatDateCell }
         ])
         setModalOptions(
           KyThiNDChuaThamGia.map(exam => ({
@@ -384,15 +398,25 @@ function QLNguoiDung() {
     }
   }
 
-  // Utility functions
-  const showError = (title, message = 'Vui lòng thử lại sau.') => {
-    Swal.fire({
-      icon: 'error',
-      title,
-      text: message,
-      confirmButtonText: 'Đóng',
-      confirmButtonColor: '#1976d2'
-    })
+  // Utility: show error (hỗ trợ cả 1 tham số hoặc 2 tham số)
+  const showError = (titleOrMessage, message) => {
+    if (message) {
+      fireTopSwal({
+        icon: 'error',
+        title: titleOrMessage,
+        text: message,
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#1976d2'
+      })
+    } else {
+      fireTopSwal({
+        icon: 'error',
+        title: 'Thông báo',
+        text: titleOrMessage,
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#1976d2'
+      })
+    }
   }
 
   const createAccountData = () => ({
@@ -428,7 +452,6 @@ function QLNguoiDung() {
       setExams(examsRes.data)
       setCertificates(certificatesRes.data)
 
-      // Preload tên chứng chỉ đã nhận (Đã lấy) theo user
       await preloadCertNames(accountsRes.data)
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
@@ -476,7 +499,7 @@ function QLNguoiDung() {
     }
   }
 
-  // Event handlers
+  // CRUD
   const handleAdd = async () => {
     try {
       await API.post(`/${routeAddress}/${funcAdd}`, createAccountData())
@@ -503,42 +526,37 @@ function QLNguoiDung() {
     }
   }
 
-  // Hàm xử lý Import Excel
+  // Import Excel
   const handleImportExcel = async (data) => {
     try {
-      // Validate dữ liệu trước khi gửi
+      // Validate
       const validationErrors = []
 
       data.forEach((row, index) => {
-        const rowNumber = index + 2 // +2 vì Excel bắt đầu từ 1 và có header
-
+        const rowNumber = index + 2
         if (!row.TenHienThi || row.TenHienThi.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu tên hiển thị`)
         }
-
         if (!row.TenTaiKhoan || row.TenTaiKhoan.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu tên tài khoản`)
         }
-
         if (!row.CCCD || row.CCCD.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu CCCD`)
         } else if (row.CCCD.toString().length !== 12) {
           validationErrors.push(`Hàng ${rowNumber}: CCCD phải có 12 chữ số`)
         }
-
         if (!row.SDT || row.SDT.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu số điện thoại`)
         } else if (row.SDT.toString().length !== 10) {
           validationErrors.push(`Hàng ${rowNumber}: Số điện thoại phải có 10 chữ số`)
         }
-
         if (!row.MatKhau || row.MatKhau.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu mật khẩu`)
         }
       })
 
       if (validationErrors.length > 0) {
-        Swal.fire({
+        fireTopSwal({
           icon: 'error',
           title: 'Dữ liệu không hợp lệ',
           html: `<div style="text-align: left;">
@@ -578,14 +596,14 @@ function QLNguoiDung() {
       }
 
       if (errors.length === 0) {
-        Swal.fire({
+        fireTopSwal({
           icon: 'success',
           title: 'Thành công',
           text: `Đã nhập thành công ${results.length} tài khoản`,
           confirmButtonColor: '#1976d2'
         })
       } else if (results.length === 0) {
-        Swal.fire({
+        fireTopSwal({
           icon: 'error',
           title: 'Tất cả bản ghi đều lỗi',
           html: `<div style="text-align: left;">
@@ -597,7 +615,7 @@ function QLNguoiDung() {
           width: '600px'
         })
       } else {
-        Swal.fire({
+        fireTopSwal({
           icon: 'warning',
           title: 'Hoàn thành với một số lỗi',
           html: `<div style="text-align: left;">
@@ -614,7 +632,7 @@ function QLNguoiDung() {
 
       fetchAccounts()
     } catch (error) {
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi nhập dữ liệu',
         text: 'Có lỗi hệ thống xảy ra',
@@ -629,7 +647,7 @@ function QLNguoiDung() {
 
   const handleDelete = async (id) => {
     try {
-      const result = await Swal.fire({
+      const result = await fireTopSwal({
         title: 'Xác nhận xóa?',
         text: 'Hành động này sẽ xóa tài khoản khỏi hệ thống.',
         icon: 'warning',

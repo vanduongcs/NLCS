@@ -20,6 +20,27 @@ function QLKetQua() {
   const funcUpdate = 'cap-nhat-ket-qua'
   const funcDelete = 'xoa-ket-qua'
 
+  // Top-most SweetAlert helper
+  const fireTopSwal = (opts) =>
+    Swal.fire({
+      ...opts,
+      didOpen: (el) => {
+        if (el?.parentElement) el.parentElement.style.zIndex = 20000
+      }
+    })
+
+  // Safe date helpers
+  const formatDateCell = (v) => {
+    if (!v) return '___'
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? '___' : d.toLocaleDateString('vi-VN')
+  }
+  const formatDateTimeCell = (v) => {
+    if (!v) return '___'
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? '___' : d.toLocaleString('vi-VN')
+  }
+
   // State
   const [editingResult, setEditingResult] = useState(null)
   const [results, setResults] = useState([])
@@ -34,14 +55,14 @@ function QLKetQua() {
   const [Diem3, SetDiem3] = useState('')
   const [Diem4, SetDiem4] = useState('')
 
-  // Thêm state cho modal
+  // Modal
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalData, setModalData] = useState([])
   const [modalColumns, setModalColumns] = useState([])
   const [modalType, setModalType] = useState('LichSu')
 
-  // Thêm state cho ImportExcel
+  // Import Excel
   const [importExcelOpen, setImportExcelOpen] = useState(false)
 
   const formStates = {
@@ -55,7 +76,7 @@ function QLKetQua() {
 
   // Utility functions
   const showError = (message) => {
-    Swal.fire({
+    fireTopSwal({
       icon: 'warning',
       title: 'Thông báo',
       text: message,
@@ -81,7 +102,7 @@ function QLKetQua() {
     setEditingResult(null)
   }
 
-  // Thêm các hàm utility cho lịch sử
+  // Lịch sử
   const getFieldDisplayName = (field) => {
     const fieldNames = {
       'IDNguoiDung': 'Người dùng',
@@ -101,7 +122,7 @@ function QLKetQua() {
   const formatHistoryValue = (value, fieldName) => {
     if (value === null || value === undefined) return '___'
     if (fieldName === 'NgayCap' || fieldName === 'NgayHetHan') {
-      return new Date(value).toLocaleDateString('vi-VN')
+      return formatDateCell(value)
     }
     if (fieldName === 'IDKyThi') {
       const valueDisplay = exams.find(e => e._id === value)
@@ -110,14 +131,14 @@ function QLKetQua() {
     return String(value)
   }
 
-  // Hàm mở modal lịch sử
+  // Mở modal
   const handleOpenModal = (type, row) => {
     setModalType(type)
     if (type === 'LichSu') {
       setModalTitle('Lịch sử thay đổi kết quả')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'ThoiGian', label: 'Thời gian', render: formatDateTimeCell },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
         { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
         { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
@@ -133,7 +154,7 @@ function QLKetQua() {
     setModalOpen(true)
   }
 
-  // API functions
+  // API
   const fetchData = async () => {
     try {
       const [accountsRes, certificatesRes, resultsRes, examsRes] = await Promise.all([
@@ -158,9 +179,8 @@ function QLKetQua() {
       .catch((error) => showError(error.response?.data?.message || 'Lỗi khi tải kết quả'))
   }
 
-  // Event handlers
+  // CRUD
   const handleAdd = () => {
-    // const exam = exams.find(e => e._id === IDKyThi) // (không dùng, giữ nguyên cấu trúc cũ)
     API.post(`/${routeAddress}/${funcAdd}`, createResultData())
       .then(() => {
         fetchResults()
@@ -192,7 +212,6 @@ function QLKetQua() {
   }
 
   const handleUpdate = () => {
-    // const exam = exams.find(e => e._id === IDKyThi) // (không dùng, giữ nguyên cấu trúc cũ)
     API.put(`/${routeAddress}/${funcUpdate}/${editingResult}`, createResultData())
       .then(() => {
         fetchResults()
@@ -204,17 +223,14 @@ function QLKetQua() {
       })
   }
 
-  // Hàm xử lý Import Excel
+  // Import Excel
   const handleImportExcel = async (data) => {
     try {
       const importPromises = data.map(async (row) => {
-        // Tìm IDNguoiDung từ TenHienThi
         const account = accounts.find(acc => acc.TenHienThi === row.IDNguoiDung)
         if (!account) {
           throw new Error(`Không tìm thấy người dùng: ${row.IDNguoiDung}`)
         }
-
-        // Tìm IDKyThi từ TenKyThi
         const exam = exams.find(e => e.TenKyThi === row.IDKyThi)
         if (!exam) {
           throw new Error(`Không tìm thấy kỳ thi: ${row.IDKyThi}`)
@@ -228,26 +244,22 @@ function QLKetQua() {
           Diem3: row.Diem3 ? Number(row.Diem3) : undefined,
           Diem4: row.Diem4 ? Number(row.Diem4) : undefined
         }
-
         return API.post(`/${routeAddress}/${funcAdd}`, resultData)
       })
 
       await Promise.all(importPromises)
-
-      Swal.fire({
+      fireTopSwal({
         icon: 'success',
         title: 'Thành công',
         text: `Đã nhập thành công ${data.length} bản ghi`,
         confirmButtonColor: '#1976d2'
       })
-
       fetchResults()
     } catch (error) {
       console.error('Lỗi nhập dữ liệu:', error)
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi',
-        // HIỂN THỊ MESSAGE TỪ BACKEND NẾU CÓ
         text: (error?.response?.data?.message) || error?.message || 'Có lỗi xảy ra khi nhập dữ liệu',
         confirmButtonColor: '#1976d2'
       })
@@ -262,7 +274,7 @@ function QLKetQua() {
     fetchData()
   }, [])
 
-  // Table configuration
+  // Table
   const columns = [
     { label: 'Người dùng', key: 'IDNguoiDung', render: (_, row) => row.IDNguoiDung?.TenHienThi || '' },
     { label: 'Chứng chỉ', key: 'IDKyThi', render: (_, row) => row.IDKyThi?.IDChungChi?.TenChungChi || '' },
@@ -289,7 +301,7 @@ function QLKetQua() {
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ]
 
-  // hàm getOptionsWithAccount: chỉ hiển thị kỳ thi mà user đã tham gia
+  // chỉ hiện các kỳ thi user đã tham gia
   const getOptionsWithAccount = (IDNguoiDung) => {
     const account = accounts.find(acc => acc._id === IDNguoiDung)
     if (!account || !account.KyThiDaThamGia) return []
@@ -298,7 +310,6 @@ function QLKetQua() {
       .map(exam => ({ value: exam._id, label: exam.TenKyThi }))
   }
 
-  // Columns cho form thông thường
   const columnsCanEdit = [
     {
       label: 'Người dùng',
@@ -318,7 +329,6 @@ function QLKetQua() {
     { label: 'Điểm 4', key: 'Diem4', type: 'number' }
   ]
 
-  // Columns cho Import Excel (dùng tên thay vì ID)
   const columnsForImport = [
     { label: 'Người dùng', key: 'IDNguoiDung', type: 'text' },
     { label: 'Kỳ thi', key: 'IDKyThi', type: 'text' },

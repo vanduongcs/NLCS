@@ -23,6 +23,15 @@ function QLKyThi() {
   const funcUpdate = 'cap-nhat-ky-thi'
   const funcDelete = 'xoa-ky-thi'
 
+  // Top-most SweetAlert helper
+  const fireTopSwal = (opts) =>
+    Swal.fire({
+      ...opts,
+      didOpen: (el) => {
+        if (el?.parentElement) el.parentElement.style.zIndex = 20000
+      }
+    })
+
   // State
   const [EditingExam, SetEditingExam] = useState(null)
   const [certificates, setCertificates] = useState([])
@@ -45,7 +54,7 @@ function QLKyThi() {
   // ImportExcel state
   const [importExcelOpen, setImportExcelOpen] = useState(false)
 
-  // --- helpers ngày (đồng bộ với phần course) ---
+  // date helpers
   const ddmmyyyyToISO = (str) => {
     const s = String(str ?? '').trim()
     const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
@@ -59,6 +68,11 @@ function QLKyThi() {
     const iso = ddmmyyyyToISO(v)
     return iso || v
   }
+  const formatDateTimeCell = (v) => {
+    if (!v) return '___'
+    const d = new Date(v)
+    return isNaN(d) ? '___' : d.toLocaleString('vi-VN')
+  }
 
   const formStates = {
     IDChungChi, SetIDChungChi,
@@ -67,9 +81,8 @@ function QLKyThi() {
     SiSoToiDa, SetSiSoToiDa
   }
 
-  // Utility functions
   const showError = (message) => {
-    Swal.fire({
+    fireTopSwal({
       icon: 'warning',
       title: 'Thông báo',
       text: message,
@@ -98,7 +111,7 @@ function QLKyThi() {
     return cert ? cert[field] : ''
   }
 
-  // API functions
+  // API
   const fetchData = async () => {
     try {
       const [certificatesRes, examsRes, accountsRes] = await Promise.all([
@@ -125,7 +138,6 @@ function QLKyThi() {
     }
   }
 
-  // Hàm chuyển tên trường dữ liệu sang tiếng Việt
   const getFieldDisplayName = (field) => {
     const fieldNames = {
       'IDChungChi': 'Chứng chỉ',
@@ -138,22 +150,21 @@ function QLKyThi() {
     return fieldNames[field] || field
   }
 
-  // Hàm format giá trị lịch sử
   const formatHistoryValue = (value, fieldName) => {
     if (value === null || value === undefined) return '___'
-    if (fieldName === 'NgayThi') return new Date(value).toLocaleDateString('vi-VN')
+    if (fieldName === 'NgayThi') return formatDateTimeCell(value).split(' ')[0] // chỉ ngày
     if (typeof value === 'object') return JSON.stringify(value)
     return String(value)
   }
 
-  // Hàm mở modal lịch sử / thí sinh
+  // Modal
   const handleOpenModal = (type, row) => {
     setModalType(type)
     if (type === 'LichSu') {
       setModalTitle('Lịch sử thay đổi')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'ThoiGian', label: 'Thời gian', render: formatDateTimeCell },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
         { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
         { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
@@ -225,7 +236,7 @@ function QLKyThi() {
     }
   }
 
-  // Event handlers
+  // CRUD
   const handleAdd = async () => {
     try {
       await API.post(`/${routeAddress}/${funcAdd}`, createExamData())
@@ -238,7 +249,7 @@ function QLKyThi() {
   }
 
   const handleDelete = async (id) => {
-    Swal.fire({
+    fireTopSwal({
       title: 'Xác nhận xóa',
       text: `Bạn có chắc chắn muốn xóa ${pageContent} này không?`,
       icon: 'warning',
@@ -252,7 +263,7 @@ function QLKyThi() {
         try {
           await API.delete(`/${routeAddress}/${funcDelete}/${id}`)
           await fetchExams()
-          Swal.fire({ title: 'Đã xóa!', text: `${pageContent} đã được xóa thành công.`, icon: 'success', confirmButtonColor: '#3085d6', confirmButtonText: 'Đóng' })
+          fireTopSwal({ title: 'Đã xóa!', text: `${pageContent} đã được xóa thành công.`, icon: 'success', confirmButtonColor: '#3085d6', confirmButtonText: 'Đóng' })
         } catch (error) {
           const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
           showError(message)
@@ -280,7 +291,7 @@ function QLKyThi() {
     }
   }
 
-  // ✅ Import Excel: mapping theo tên chứng chỉ và chuẩn hóa ngày (DD/MM/YYYY -> ISO) + chuẩn hóa Buổi
+  // Import Excel
   const handleImportExcel = async (data) => {
     try {
       const importPromises = data.map(async (row) => {
@@ -300,11 +311,11 @@ function QLKyThi() {
       })
 
       await Promise.all(importPromises)
-      Swal.fire({ icon: 'success', title: 'Thành công', text: `Đã nhập thành công ${data.length} kỳ thi`, confirmButtonColor: '#1976d2' })
+      fireTopSwal({ icon: 'success', title: 'Thành công', text: `Đã nhập thành công ${data.length} kỳ thi`, confirmButtonColor: '#1976d2' })
       fetchExams()
     } catch (error) {
       console.error('Lỗi nhập dữ liệu:', error)
-      Swal.fire({ icon: 'error', title: 'Lỗi', text: (error?.response?.data?.message) || error?.message || 'Có lỗi xảy ra khi nhập dữ liệu', confirmButtonColor: '#1976d2' })
+      fireTopSwal({ icon: 'error', title: 'Lỗi', text: (error?.response?.data?.message) || error?.message || 'Có lỗi xảy ra khi nhập dữ liệu', confirmButtonColor: '#1976d2' })
     }
   }
 
@@ -368,7 +379,6 @@ function QLKyThi() {
 
   useEffect(() => { fetchData() }, [])
 
-  // Table configuration
   const columns = [
     { label: 'Tên kỳ thi', key: 'TenKyThi' },
     { label: 'Chứng chỉ', key: 'IDChungChi', render: (value, row) => getCertificateInfo(row, 'TenChungChi') },
@@ -384,7 +394,6 @@ function QLKyThi() {
     { label: 'Xóa', key: 'deleteButton', align: 'center', isAction: 'delete' }
   ]
 
-  // Columns cho form thông thường
   const columnsCanEdit = [
     { label: 'Chọn chứng chỉ', key: 'IDChungChi', type: 'autocomplete', options: certificates.map(cert => ({ label: cert.TenChungChi, value: cert._id })) },
     { label: 'Ngày thi', key: 'NgayThi', type: 'date' },
@@ -392,7 +401,6 @@ function QLKyThi() {
     { label: 'Sĩ số tối đa', key: 'SiSoToiDa', type: 'number' }
   ]
 
-  // Columns cho Import Excel
   const columnsForImport = [
     { label: 'Tên chứng chỉ', key: 'IDChungChi', type: 'text' },
     { label: 'Ngày thi', key: 'NgayThi', type: 'date' },

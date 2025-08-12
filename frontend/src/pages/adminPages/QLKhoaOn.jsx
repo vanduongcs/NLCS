@@ -23,6 +23,15 @@ function QLKhoaOn() {
   const funcDelete = 'xoa-khoa-on'
   const historyAddress = 'courseHistory'
 
+  // Top-most SweetAlert helper
+  const fireTopSwal = (opts) =>
+    Swal.fire({
+      ...opts,
+      didOpen: (el) => {
+        if (el?.parentElement) el.parentElement.style.zIndex = 20000
+      }
+    })
+
   const [EditingCourse, SetEditingCourse] = useState(null)
   const [Courses, SetCourses] = useState([])
   const [Certificates, SetCertificates] = useState([])
@@ -62,7 +71,7 @@ function QLKhoaOn() {
   const toDDMMYYYY = (v) => {
     if (!v) return '___'
     const d = new Date(v)
-    if (isNaN(d)) return v
+    if (isNaN(d)) return '___'
     return d.toLocaleDateString('vi-VN')
   }
 
@@ -76,7 +85,7 @@ function QLKhoaOn() {
   }
 
   const showError = (message) => {
-    Swal.fire({
+    fireTopSwal({
       icon: 'warning',
       title: 'Thông báo',
       text: message,
@@ -197,7 +206,12 @@ function QLKhoaOn() {
       setModalTitle('Lịch sử thay đổi')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => new Date(value).toLocaleString('vi-VN') },
+        { key: 'ThoiGian', label: 'Thời gian', render: (value) => {
+            if (!value) return '___'
+            const d = new Date(value)
+            return isNaN(d) ? '___' : d.toLocaleString('vi-VN')
+          } 
+        },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
         { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
         { key: 'DLSau', label: 'Giá trị sau', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) }
@@ -268,7 +282,7 @@ function QLKhoaOn() {
   }
 
   const handleDelete = async (id) => {
-    Swal.fire({
+    fireTopSwal({
       title: 'Xác nhận xóa?',
       text: 'Bạn có chắc muốn xóa khóa học này?',
       icon: 'warning',
@@ -309,7 +323,7 @@ function QLKhoaOn() {
     }
   }
 
-  // ✅ Import: mapping đúng field & chuẩn hóa ngày (DD/MM/YYYY -> ISO)
+  // Import Excel: chuẩn hóa ngày
   const handleImportExcel = async (data) => {
     try {
       const importPromises = data.map(async (row) => {
@@ -329,7 +343,7 @@ function QLKhoaOn() {
       })
 
       await Promise.all(importPromises)
-      Swal.fire({
+      fireTopSwal({
         icon: 'success',
         title: 'Thành công',
         text: `Đã nhập thành công ${data.length} khóa học`,
@@ -338,7 +352,7 @@ function QLKhoaOn() {
       fetchCourses()
     } catch (error) {
       console.error('Lỗi nhập dữ liệu:', error)
-      Swal.fire({
+      fireTopSwal({
         icon: 'error',
         title: 'Lỗi',
         text: error.message || 'Có lỗi xảy ra khi nhập dữ liệu',
