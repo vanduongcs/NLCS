@@ -41,7 +41,7 @@ const AccountSchema = new mongoose.Schema({
     required: true,
     trim: true,
     minLength: 10,
-    maxLength: 10
+    maxLength: 11
   },
   KhoaHocDaThamGia: [{
     type: mongoose.Schema.Types.ObjectId,

@@ -3,6 +3,7 @@ import Exam from '../models/Exam.js'
 import Certificate from '../models/Certificate.js'
 import Account from '../models/Account.js'
 import ExamHistory from '../models/ExamHistory.js'
+import accountController from './accountController.js'
 
 // Định dạng ngày thành DDMMYYYY để ghép tên
 const formatDate = (date) => {
@@ -55,8 +56,8 @@ const addExam = async (req, res) => {
     }
     const today = new Date(); today.setHours(0, 0, 0, 0)
     examDate.setHours(0, 0, 0, 0)
-    if (examDate < today) {
-      return res.status(400).json({ message: 'Ngày thi không thể nhỏ hơn ngày hiện tại.', error: 'SAI_MIEN_GIA_TRI' })
+    if (examDate <= today) {
+      return res.status(400).json({ message: 'Ngày thi phải sau ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
     }
 
     if (!Buoi) {
@@ -120,7 +121,7 @@ const getExam = async (req, res) => {
     }
     res.status(200).json(exam)
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message })
+    return res.status(400).json({ message: error.message })
   }
 }
 
@@ -140,6 +141,10 @@ const updateExam = async (req, res) => {
     const { examId } = req.params
     const updates = req.body
 
+    const allowedFields = [
+      'IDChungChi', 'NgayThi', 'Buoi', 'IDTaiKhoan', 'SiSoToiDa', 'SiSoHienTai', 'TenKyThi'
+    ]
+
     const currentExam = await Exam.findById(examId)
     if (!currentExam) {
       return res.status(404).json({ message: 'Không tìm thấy kỳ thi' })
@@ -147,29 +152,62 @@ const updateExam = async (req, res) => {
 
     // Nếu cập nhật danh sách thí sinh, kiểm tra trùng lịch cùng ngày/buổi
     if (updates.IDTaiKhoan && Array.isArray(updates.IDTaiKhoan)) {
-      const currentStudents = currentExam.IDTaiKhoan || []
-      const newStudents = updates.IDTaiKhoan.filter(id => !currentStudents.includes(String(id)))
+      if (currentExam.SiSoHienTai < currentExam.SiSoToiDa) {
+        const currentStudents = currentExam.IDTaiKhoan || []
+        const newStudents = updates.IDTaiKhoan.filter(id => !currentStudents.includes(String(id)))
+        const removedStudents = currentStudents.filter(id => !updates.IDTaiKhoan.includes(String(id)))
 
-      if (newStudents.length > 0) {
-        const examDate = new Date(currentExam.NgayThi); examDate.setHours(0, 0, 0, 0)
-        const conflictingExams = await Exam.find({
-          _id: { $ne: examId },
-          NgayThi: { $gte: examDate, $lt: new Date(examDate.getTime() + 86400000) },
-          Buoi: currentExam.Buoi
-        }).select('_id IDTaiKhoan TenKyThi')
+        if (newStudents.length > 0) {
+          const examDate = new Date(currentExam.NgayThi); examDate.setHours(0, 0, 0, 0)
+          const conflictingExams = await Exam.find({
+            _id: { $ne: examId },
+            NgayThi: { $gte: examDate, $lt: new Date(examDate.getTime() + 86400000) },
+            Buoi: currentExam.Buoi
+          }).select('_id IDTaiKhoan TenKyThi')
 
-        for (const sid of newStudents) {
-          for (const ex of conflictingExams) {
-            if (ex.IDTaiKhoan && ex.IDTaiKhoan.includes(String(sid))) {
-              return res.status(400).json({
-                message: `Thí sinh đã đăng ký kỳ thi khác (${ex.TenKyThi}) vào cùng ngày và buổi`,
-                error: 'TRUNG_LICH'
-              })
+          for (const sid of newStudents) {
+            for (const ex of conflictingExams) {
+              if (ex.IDTaiKhoan && ex.IDTaiKhoan.includes(String(sid))) {
+                return res.status(400).json({
+                  message: `Thí sinh đã đăng ký kỳ thi khác (${ex.TenKyThi}) vào cùng ngày và buổi`,
+                  error: 'TRUNG_LICH'
+                })
+              }
+            }
+          }
+          // Thêm kỳ thi vào KyThiDaThamGia của các tài khoản mới bằng updateAccount
+          for (const accId of newStudents) {
+            const acc = await Account.findById(accId)
+            if (acc) {
+              const newExams = [...(acc.KyThiDaThamGia || []), examId]
+              await accountController.updateAccount(
+                { params: { TenTaiKhoan: acc.TenTaiKhoan }, body: { KyThiDaThamGia: newExams } },
+                { status: () => ({ json: () => { } }) }
+              )
             }
           }
         }
+        // Loại bỏ kỳ thi khỏi KyThiDaThamGia của các tài khoản bị xóa bằng updateAccount
+        if (removedStudents.length > 0) {
+          for (const accId of removedStudents) {
+            const acc = await Account.findById(accId)
+            if (acc) {
+              const newExams = (acc.KyThiDaThamGia || []).filter(id => String(id) !== String(examId))
+              await accountController.updateAccount(
+                { params: { TenTaiKhoan: acc.TenTaiKhoan }, body: { KyThiDaThamGia: newExams } },
+                { status: () => ({ json: () => { } }) }
+              )
+            }
+          }
+        }
+
+        updates.SiSoHienTai = updates.IDTaiKhoan.length
+      } else {
+        return res.status(400).json({
+          message: 'Kỳ thi đã hết chỗ trống',
+          error: 'SI_SO_KHONG_HOP_LE'
+        })
       }
-      updates.SiSoHienTai = updates.IDTaiKhoan.length
     }
 
     // Nếu đổi chứng chỉ/ngày/buổi thì đổi tên kỳ thi cho đồng nhất
@@ -188,14 +226,50 @@ const updateExam = async (req, res) => {
       updates.TenKyThi = `${certificate.TenChungChi}-${formatDate(finalNgayThi)}-${finalBuoi.charAt(0).toUpperCase()}${nextNumber}`
     }
 
+    // Thực hiện cập nhật
     const exam = await Exam.findByIdAndUpdate(examId, updates, { new: true, runValidators: true })
     if (!exam) {
       return res.status(404).json({ message: 'Không tìm thấy kỳ thi' })
     }
 
+    // Ghi lịch sử thay đổi
+    try {
+      const history = await ExamHistory.findOne({ IDKyThi: examId })
+      if (history) {
+        const chiTietThayDoi = []
+        allowedFields.forEach(field => {
+          // Không lưu lịch sử thay đổi của SiSoHienTai
+          if (field === 'SiSoHienTai') return
+          const oldValue = currentExam[field]
+          const newValue = exam[field]
+          if (updates[field] !== undefined) {
+            if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+              if (JSON.stringify([...oldValue].sort()) !== JSON.stringify([...newValue].sort())) {
+                chiTietThayDoi.push({ TruongDLThayDoi: field, DLTruoc: oldValue, DLSau: newValue })
+              }
+            } else if (oldValue?.toString() !== newValue?.toString()) {
+              chiTietThayDoi.push({ TruongDLThayDoi: field, DLTruoc: oldValue, DLSau: newValue })
+            }
+          }
+        })
+        if (chiTietThayDoi.length > 0) {
+          await history.updateOne({
+            $push: {
+              DSTruongDLThayDoi: {
+                KieuThayDoi: 'Sửa',
+                ThoiGian: new Date(),
+                ChiTietThayDoi: chiTietThayDoi
+              }
+            }
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('Ghi lịch sử kỳ thi thất bại:', e?.message)
+    }
+
     return res.status(200).json(exam)
   } catch (error) {
-    // 400 để FE hiển thị đúng message
     return res.status(400).json({ message: error.message })
   }
 }
@@ -211,10 +285,7 @@ const deleteExam = async (req, res) => {
     }
 
     // Không cho xóa nếu đã có ràng buộc
-    const accountWithExam = await Account.findOne({
-      KyThiDaThamGia: { $elemMatch: { $eq: id } }
-    })
-    if (accountWithExam) {
+    if (examToDelete.SiSoHienTai > 0) {
       return res.status(400).json({ message: 'Không thể xóa. Đợt thi đã có học viên đăng ký.', error: 'CO_RANG_BUOC' })
     }
 

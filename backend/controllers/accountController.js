@@ -44,6 +44,22 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập mật khẩu', error: 'THIEU_TRUONG' })
     }
 
+    if (CCCD.length !== 12) {
+      return res.status(400).json({ message: 'Căn cước công dân phải có 12 chữ số', error: 'CCCD_KHONG_HOP_LE' })
+    }
+
+    if (CCCD[0] !== '0') {
+      return res.status(400).json({ message: 'Căn cước công dân phải bắt đầu bằng số 0', error: 'CCCD_KHONG_HOP_LE' })
+    }
+
+    if (SDT.length !== 10 && SDT.length !== 11) {
+      return res.status(400).json({ message: 'Số điện thoại phải có 10 hoặc 11 chữ số', error: 'SDT_KHONG_HOP_LE' })
+    }
+
+    if (SDT[0] !== '0') {
+      return res.status(400).json({ message: 'Số điện thoại phải bắt đầu bằng số 0', error: 'SDT_KHONG_HOP_LE' })
+    }
+
     // Kiểm tra các trường dữ liệu này có tồn tại trong collection Account từ trước không
     const [existUser, existCCCD, existSDT] = await Promise.all([
       Account.findOne({ TenTaiKhoan }),
@@ -91,9 +107,27 @@ const login = async (req, res) => {
   try {
     const { TenTaiKhoan, MatKhau } = req.body
     const user = await Account.findOne({ TenTaiKhoan })
-    if (!user || user.MatKhau !== MatKhau) {
-      return res.status(409).json({ message: 'Sai thông tin đăng nhập', error: 'SAI_DANG_NHAP' })
+
+    if (!TenTaiKhoan && !MatKhau) {
+      return res.status(400).json({ message: 'Vui lòng nhập tên tài khoản và mật khẩu', error: 'THIEU_TRUONG' })
     }
+
+    if (!TenTaiKhoan) {
+      return res.status(400).json({ message: 'Vui lòng nhập tên tài khoản', error: 'THIEU_TRUONG' })
+    }
+
+    if (!MatKhau) {
+      return res.status(400).json({ message: 'Vui lòng nhập mật khẩu', error: 'THIEU_TRUONG' })
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'Tài khoản không tồn tại', error: 'KHONG_TIM_THAY' })
+    }
+
+    if (user.MatKhau !== MatKhau) {
+      return res.status(409).json({ message: 'Sai mật khẩu', error: 'SAI_DANG_NHAP' })
+    }
+
     const token = jwt.sign({ id: user._id, TenTaiKhoan, Loai: user.Loai }, process.env.JWT_SECRET, { expiresIn: '365d' })
     res.status(200).json({ token })
   } catch (error) {
@@ -304,7 +338,7 @@ const deleteAccount = async (req, res) => {
 
     const hasData = account.KhoaHocDaThamGia.length > 0 || account.KyThiDaThamGia.length > 0 || account.ChungChiDaNhan.length > 0
     if (hasData) {
-      return res.status(400).json({ message: 'Không thể xóa tài khoản còn liên kết dữ liệu' })
+      return res.status(400).json({ message: 'Không thể xóa tài khoản còn liên kết dữ liệu', error: 'CON_LIEN_KET' })
     }
 
     const history = await AccountHistory.findOne({ IDTaiKhoan: id })

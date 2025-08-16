@@ -2,6 +2,7 @@ import Course from '../models/Course.js'
 import Certificate from '../models/Certificate.js'
 import Account from '../models/Account.js'
 import CourseHistory from '../models/CourseHistory.js'
+import accountController from '../controllers/accountController.js'
 
 // Hàm định dạng ngày: trả về DDMMYYYY (không dấu /)
 const formatDate = (date) => {
@@ -108,8 +109,8 @@ const addCourse = async (req, res) => {
     if (dateKhaiGiang > dateKetThuc) {
       return res.status(400).json({ message: 'Ngày khai giảng phải nhỏ hơn ngày kết thúc', error: 'SAI_MIEN_GIA_TRI' })
     }
-    if (dateKhaiGiang < now) {
-      return res.status(400).json({ message: 'Ngày khai giảng không được nhỏ hơn ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
+    if (dateKhaiGiang <= now) {
+      return res.status(400).json({ message: 'Ngày khai giảng phải sau ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
     }
 
     // Validate lịch học theo thứ của ngày khai giảng
@@ -204,8 +205,10 @@ const updateCourse = async (req, res) => {
     }
 
     const now = new Date()
-    if (new Date(finalNgayKhaiGiang) < now) {
-      return res.status(400).json({ message: 'Ngày khai giảng không được nhỏ hơn ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
+    if (NgayKhaiGiang !== finalNgayKhaiGiang) {
+      if (new Date(finalNgayKhaiGiang) < now) {
+        return res.status(400).json({ message: 'Ngày khai giảng không được nhỏ hơn ngày hiện tại', error: 'SAI_MIEN_GIA_TRI' })
+      }
     }
 
     const ThuTrongTuan = new Date(finalNgayKhaiGiang).getDay()
@@ -229,24 +232,48 @@ const updateCourse = async (req, res) => {
     }
 
     // Xử lý IDTaiKhoan
-    const finalIDTaiKhoan = IDTaiKhoan !== undefined ? IDTaiKhoan : oldCourse.IDTaiKhoan
-    const finalSiSoToiDa = SiSoToiDa !== undefined ? SiSoToiDa : oldCourse.SiSoToiDa
-
-    if (IDTaiKhoan !== undefined) {
+    if (IDTaiKhoan !== undefined && Array.isArray(IDTaiKhoan)) {
+      const currentSiSoToiDa = SiSoToiDa !== undefined ? SiSoToiDa : oldCourse.SiSoToiDa
+      if (IDTaiKhoan.length > currentSiSoToiDa) {
+        return res.status(400).json({ message: 'Khóa học đã hết chỗ trống', error: 'SI_SO_TOI_DA_KHONG_HOP_LE' })
+      }
       // Kiểm tra danh sách tài khoản có hợp lệ không
       if (IDTaiKhoan.length > 0) {
         const validAccounts = await Account.find({ _id: { $in: IDTaiKhoan } })
         if (validAccounts.length !== IDTaiKhoan.length) {
           return res.status(400).json({ message: 'Danh sách tài khoản không hợp lệ', error: 'DANH_SACH_TAI_KHOAN_KHONG_HOP_LE' })
         }
+
+        // Kiểm tra trùng lịch
+        const finalNgayKhaiGiang = NgayKhaiGiang || oldCourse.NgayKhaiGiang
+        const finalNgayKetThuc = NgayKetThuc || oldCourse.NgayKetThuc
+
+        for (const acc of validAccounts) {
+          // Lấy tất cả khóa học mà acc đã tham gia (ngoại trừ khóa học hiện tại)
+          const courses = await Course.find({
+            _id: { $in: acc.KhoaHocDaThamGia || [], $ne: oldCourse._id }
+          })
+          for (const c of courses) {
+            // Nếu khoảng thời gian bị giao nhau thì không cho thêm
+            const startA = new Date(finalNgayKhaiGiang)
+            const endA = new Date(finalNgayKetThuc)
+            const startB = new Date(c.NgayKhaiGiang)
+            const endB = new Date(c.NgayKetThuc)
+            if (
+              (startA <= endB && endA >= startB) // giao nhau
+            ) {
+              return res.status(400).json({
+                message: `Tài khoản ${acc.TenHienThi || acc._id} đã tham gia khóa học khác bị trùng lịch.`,
+                error: 'TRUNG_LICH_KHOA_HOC'
+              })
+            }
+          }
+        }
       }
       updateData.IDTaiKhoan = IDTaiKhoan
       updateData.SiSoHienTai = IDTaiKhoan.length
-    }
-
-    // Kiểm tra sĩ số
-    if (finalSiSoToiDa < finalIDTaiKhoan.length) {
-      return res.status(400).json({ message: 'Sĩ số tối đa không thể nhỏ hơn sĩ số hiện tại', error: 'SI_SO_TOI_DA_KHONG_HOP_LE' })
+    } else {
+      return res.status(400).json({ message: 'Khóa học đã hết chỗ trống', error: 'SI_SO_TOI_DA_KHONG_HOP_LE' })
     }
 
     // Cập nhật các trường khác
@@ -286,17 +313,29 @@ const updateCourse = async (req, res) => {
       const removedAccountIds = oldAccountIds.filter(id => !newAccountIds.map(String).includes(String(id)))
 
       if (addedAccountIds.length > 0) {
-        await Account.updateMany(
-          { _id: { $in: addedAccountIds } },
-          { $addToSet: { KhoaHocDaThamGia: updatedCourse._id } }
-        )
+        for (const accId of addedAccountIds) {
+          const acc = await Account.findById(accId)
+          if (acc) {
+            const newCourses = [...(acc.KhoaHocDaThamGia || []), updatedCourse._id]
+            await accountController.updateAccount({
+              params: { TenTaiKhoan: acc.TenTaiKhoan },
+              body: { KhoaHocDaThamGia: newCourses }
+            }, { status: () => ({ json: () => { } }) }) // giả lập res cho nội bộ
+          }
+        }
       }
 
       if (removedAccountIds.length > 0) {
-        await Account.updateMany(
-          { _id: { $in: removedAccountIds } },
-          { $pull: { KhoaHocDaThamGia: updatedCourse._id } }
-        )
+        for (const accId of removedAccountIds) {
+          const acc = await Account.findById(accId)
+          if (acc) {
+            const newCourses = (acc.KhoaHocDaThamGia || []).filter(id => String(id) !== String(updatedCourse._id))
+            await accountController.updateAccount({
+              params: { TenTaiKhoan: acc.TenTaiKhoan },
+              body: { KhoaHocDaThamGia: newCourses }
+            }, { status: () => ({ json: () => { } }) })
+          }
+        }
       }
     }
 

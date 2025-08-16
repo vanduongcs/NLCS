@@ -59,8 +59,8 @@ function QLKhoaOn() {
     const s = String(str ?? '').trim()
     const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
     if (!m) return null
-    const [ , dd, mm, yyyy ] = m
-    return `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`
+    const [, dd, mm, yyyy] = m
+    return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
   }
   const toISOForMongo = (v) => {
     if (!v) return ''
@@ -206,11 +206,12 @@ function QLKhoaOn() {
       setModalTitle('Lịch sử thay đổi')
       setModalColumns([
         { key: 'KieuThayDoi', label: 'Loại thay đổi' },
-        { key: 'ThoiGian', label: 'Thời gian', render: (value) => {
+        {
+          key: 'ThoiGian', label: 'Thời gian', render: (value) => {
             if (!value) return '___'
             const d = new Date(value)
             return isNaN(d) ? '___' : d.toLocaleString('vi-VN')
-          } 
+          }
         },
         { key: 'TruongDLThayDoi', label: 'Trường dữ liệu', render: (value) => getFieldDisplayName(value) },
         { key: 'DLTruoc', label: 'Giá trị trước', render: (value, row) => formatHistoryValue(value, row.TruongDLThayDoi) },
@@ -233,41 +234,52 @@ function QLKhoaOn() {
 
   const fetchRelatedData = async (courseId, row, type) => {
     if (type === 'IDTaiKhoan') {
-      const course = Courses.find(c => c._id === courseId)
-      if (!course) {
+      try {
+        // Lấy dữ liệu khóa học mới nhất từ API
+        const courseRes = await API.get(`/course/tim-khoa-on/${courseId}`)
+        const course = courseRes.data
+        if (!course) {
+          setModalData([])
+          setModalColumns([])
+          setModalOptions([])
+          setModalTitle('Danh sách học viên')
+          return
+        }
+        // Lấy danh sách tài khoản mới nhất
+        const accountsListRes = await API.get('/account/tat-ca-tai-khoan')
+        const accountsList = accountsListRes.data
+        const dsHocVien = (course.IDTaiKhoan || []).map(accId => {
+          const acc = accountsList.find(a => String(a._id) === String(accId))
+          return {
+            _id: acc?._id || accId,
+            TenHienThi: acc?.TenHienThi || accId,
+            TenTaiKhoan: acc?.TenTaiKhoan || '',
+            SDT: acc?.SDT || '',
+            CCCD: acc?.CCCD || ''
+          }
+        })
+        setModalData(dsHocVien)
+        setModalColumns([
+          { key: 'TenHienThi', label: 'Tên học viên' },
+          { key: 'TenTaiKhoan', label: 'Tài khoản' },
+          { key: 'SDT', label: 'Số điện thoại' },
+          { key: 'CCCD', label: 'CCCD' }
+        ])
+        const accountNotInCourse = accountsList.filter(acc =>
+          !(course.IDTaiKhoan || []).map(id => String(id)).includes(String(acc._id))
+        )
+        setModalOptions(accountNotInCourse.map(a => ({
+          value: a._id,
+          label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
+        })))
+        setModalTitle('Danh sách học viên')
+      } catch (error) {
         setModalData([])
         setModalColumns([])
         setModalOptions([])
         setModalTitle('Danh sách học viên')
-        return
+        showError('Lỗi khi tải dữ liệu: ' + (error.response?.data?.message || error.message))
       }
-      const dsHocVien = (course.IDTaiKhoan || []).map(accId => {
-        const acc = accounts.find(a => a._id === accId)
-        return {
-          _id: acc?._id || accId,
-          TenHienThi: acc?.TenHienThi || accId,
-          TenTaiKhoan: acc?.TenTaiKhoan || '',
-          SDT: acc?.SDT || '',
-          CCCD: acc?.CCCD || ''
-        }
-      })
-      setModalData(dsHocVien)
-      setModalColumns([
-        { key: 'TenHienThi', label: 'Tên học viên' },
-        { key: 'TenTaiKhoan', label: 'Tài khoản' },
-        { key: 'SDT', label: 'Số điện thoại' },
-        { key: 'CCCD', label: 'CCCD' }
-      ])
-      const accountsListRes = await API.get('/account/tat-ca-tai-khoan')
-      const accountsList = accountsListRes.data
-      const accountNotInCourse = accountsList.filter(acc =>
-        !(course.IDTaiKhoan || []).map(id => String(id)).includes(String(acc._id))
-      )
-      setModalOptions(accountNotInCourse.map(a => ({
-        value: a._id,
-        label: a.TenHienThi + (a.TenTaiKhoan ? ` (${a.TenTaiKhoan})` : '')
-      })))
-      setModalTitle('Danh sách học viên')
     }
   }
 
@@ -325,44 +337,161 @@ function QLKhoaOn() {
 
   // Import Excel: chuẩn hóa ngày
   const handleImportExcel = async (data) => {
-    try {
-      const importPromises = data.map(async (row) => {
-        const certificate = Certificates.find(cert => cert.TenChungChi === row.CertificateID)
-        if (!certificate) {
-          throw new Error(`Không tìm thấy chứng chỉ: ${row.CertificateID}`)
-        }
-        const courseData = {
-          IDChungChi: certificate._id,
-          LichHoc: row.LichHoc || '',
-          NgayKhaiGiang: toISOForMongo(row.NgayKhaiGiang || ''),
-          NgayKetThuc: toISOForMongo(row.NgayKetThuc || ''),
-          Buoi: row.Buoi || '',
-          SiSoToiDa: row.SiSoToiDa ? Number(row.SiSoToiDa) : 0
-        }
-        return API.post(`/${routeAddress}/${funcAdd}`, courseData)
-      })
+    const results = []
+    const errors = []
 
-      await Promise.all(importPromises)
-      fireTopSwal({
-        icon: 'success',
-        title: 'Thành công',
-        text: `Đã nhập thành công ${data.length} khóa học`,
-        confirmButtonColor: '#1976d2'
-      })
+    try {
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i]
+        const rowNumber = i + 2
+
+        try {
+          const certificate = Certificates.find(cert => cert.TenChungChi === row.CertificateID)
+          if (!certificate) {
+            throw new Error(`Không tìm thấy chứng chỉ: ${row.CertificateID}`)
+          }
+          const courseData = {
+            IDChungChi: certificate._id,
+            LichHoc: row.LichHoc || '',
+            NgayKhaiGiang: toISOForMongo(row.NgayKhaiGiang || ''),
+            NgayKetThuc: toISOForMongo(row.NgayKetThuc || ''),
+            Buoi: row.Buoi || '',
+            SiSoToiDa: row.SiSoToiDa ? Number(row.SiSoToiDa) : 0
+          }
+          await API.post(`/${routeAddress}/${funcAdd}`, courseData)
+          results.push({ rowNumber, success: true })
+        } catch (error) {
+          console.error(`Error at row ${rowNumber}:`, error)
+          let errorMessage = 'Lỗi không xác định'
+
+          if (error.response) {
+            if (error.response.data) {
+              if (typeof error.response.data === 'string') {
+                errorMessage = error.response.data
+              } else if (error.response.data.message) {
+                errorMessage = error.response.data.message
+              } else if (error.response.data.error) {
+                errorMessage = error.response.data.error
+              } else {
+                errorMessage = JSON.stringify(error.response.data)
+              }
+            } else {
+              errorMessage = `Lỗi HTTP ${error.response.status}: ${error.response.statusText}`
+            }
+          } else if (error.message) {
+            errorMessage = error.message
+          }
+
+          errors.push({ rowNumber, error: errorMessage })
+        }
+      }
+
+      if (errors.length === 0) {
+        fireTopSwal({
+          icon: 'success',
+          title: 'Thành công',
+          text: `Đã nhập thành công ${results.length} khóa học`,
+          confirmButtonColor: '#1976d2'
+        })
+      } else if (results.length === 0) {
+        fireTopSwal({
+          icon: 'error',
+          title: 'Tất cả bản ghi đều lỗi',
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
+            <strong>Chi tiết các lỗi:</strong><br>
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '700px'
+        })
+        throw new Error(`Tất cả ${data.length} bản ghi đều bị lỗi`)
+      } else {
+        fireTopSwal({
+          icon: 'warning',
+          title: 'Hoàn thành với một số lỗi',
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
+            <strong>Thành công:</strong> ${results.length} bản ghi<br>
+            <strong>Lỗi:</strong> ${errors.length} bản ghi<br><br>
+            <strong>Chi tiết các lỗi:</strong><br>
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '700px'
+        })
+      }
+
       fetchCourses()
     } catch (error) {
-      console.error('Lỗi nhập dữ liệu:', error)
+      console.error('Import Excel system error:', error)
+      if (error.message?.includes('bản ghi đều bị lỗi')) {
+        throw error
+      }
+
+      let systemErrorMessage = 'Có lỗi hệ thống xảy ra khi nhập dữ liệu'
+      if (error.response?.data?.message) {
+        systemErrorMessage = error.response.data.message
+      } else if (error.message) {
+        systemErrorMessage = error.message
+      }
+
       fireTopSwal({
         icon: 'error',
-        title: 'Lỗi',
-        text: error.message || 'Có lỗi xảy ra khi nhập dữ liệu',
+        title: 'Lỗi hệ thống',
+        text: systemErrorMessage,
         confirmButtonColor: '#1976d2'
       })
+      throw new Error(systemErrorMessage)
     }
   }
 
   const handleOpenImportExcel = () => {
     setImportExcelOpen(true)
+  }
+
+  const handleAddRelatedAccount = async (courseId, type, accountId) => {
+    try {
+      const courseRes = await API.get(`/course/tim-khoa-on/${courseId}`)
+      const course = courseRes.data
+      if (!course) return
+
+      // Thêm accountId vào danh sách học viên
+      const newAccountList = [...(course.IDTaiKhoan || []), accountId]
+      await API.put(`/course/cap-nhat-khoa-on/${courseId}`, {
+        ...course,
+        IDTaiKhoan: newAccountList
+      })
+      await fetchCourses()
+      await fetchRelatedData(courseId, course, type)
+    } catch (error) {
+      showError(error.response?.data?.message || 'Vui lòng thử lại sau.')
+    }
+  }
+
+  const handleDeleteRelatedAccount = async (row, courseId, type) => {
+    if (type !== 'IDTaiKhoan') return
+    try {
+      const courseRes = await API.get(`/course/tim-khoa-on/${courseId}`)
+      const course = courseRes.data
+      if (!course) return
+      // Xóa học viên khỏi danh sách
+      const newAccountList = (course.IDTaiKhoan || []).filter(id => id !== row._id)
+      await API.put(`/course/cap-nhat-khoa-on/${courseId}`, {
+        ...course,
+        IDTaiKhoan: newAccountList
+      })
+      await fetchCourses()
+      await fetchRelatedData(courseId, course, type)
+    } catch (error) {
+      showError(error.response?.data?.message || 'Vui lòng thử lại sau.')
+    }
+  }
+
+  const handleUpdateModalOptions = (type, addedId) => {
+    if (type === 'IDTaiKhoan') {
+      setModalOptions(prev => prev.filter(option => option.value !== addedId))
+    }
   }
 
   useEffect(() => {
@@ -466,6 +595,9 @@ function QLKhoaOn() {
         title={modalTitle}
         data={modalData}
         columns={modalColumns}
+        onAdd={handleAddRelatedAccount}
+        onDelete={handleDeleteRelatedAccount}
+        onUpdateOptions={handleUpdateModalOptions}
       />
       <ImportExcel
         open={importExcelOpen}

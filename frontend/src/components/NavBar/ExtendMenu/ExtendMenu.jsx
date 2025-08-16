@@ -26,7 +26,7 @@ function ExtendMenu({ isAdmin }) {
   if (!isAdmin) {
     Items = [
       { text: 'Trang chủ', path: '/trang-chu' },
-      { text: 'Đợt thi', path: '/dot-thi' },
+      { text: 'Đợt thi', path: '/lich-thi' },
       { text: 'Lịch khai giảng', path: '/lich-khai-giang' },
       { text: 'Kết quả', path: '/ket-qua' },
       { text: 'Xác thực chứng chỉ', path: '/xac-thuc-chung-chi' },

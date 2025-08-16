@@ -32,17 +32,17 @@ function parseAndValidateScore(fieldName, raw, { required = false, max }) {
 
 // Cách tính điểm tổng kết
 function tinhDiemTK(diemArray, cachTinhDiem) {
+  let score = 0
   if (cachTinhDiem === 'Tổng') {
-    const sum = diemArray.reduce((a, b) => a + b, 0)
-    return parseFloat(sum.toFixed(2))
+    score = diemArray.reduce((a, b) => a + b, 0)
   } else {
-    const avg = diemArray.reduce((a, b) => a + b, 0) / diemArray.length
-    const nguyen = Math.floor(avg)
-    const phanLe = avg - nguyen
-    if (phanLe < 0.25) return parseFloat(nguyen.toFixed(2))
-    if (phanLe < 0.75) return parseFloat((nguyen + 0.5).toFixed(2))
-    return parseFloat((nguyen + 1).toFixed(2))
+    score = diemArray.reduce((a, b) => a + b, 0) / diemArray.length
   }
+  const nguyen = Math.floor(score)
+  const phanLe = score - nguyen
+  if (phanLe < 0.25) return parseFloat(nguyen.toFixed(2))
+  if (phanLe < 0.75) return parseFloat((nguyen + 0.5).toFixed(2))
+  return parseFloat((nguyen + 1).toFixed(2))
 }
 
 // ======================= Controllers =======================

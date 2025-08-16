@@ -227,10 +227,15 @@ function QLNguoiDung() {
 
       const currentAccount = Accounts.find(acc => acc.TenTaiKhoan === dataNeeded)
       if (currentAccount) {
-        await fetchRelatedDataAndSetModal(currentAccount._id, {
-          ...currentAccount,
-          [type]: updatedData
-        }, type)
+        // Sửa đoạn này để fetch lại dữ liệu mới cho ChungChiDaNhan
+        if (type === 'ChungChiDaNhan') {
+          await fetchRelatedDataAndSetModal(currentAccount._id, { ...currentAccount }, type)
+        } else {
+          await fetchRelatedDataAndSetModal(currentAccount._id, {
+            ...currentAccount,
+            [type]: updatedData
+          }, type)
+        }
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Vui lòng thử lại sau.'
@@ -534,21 +539,22 @@ function QLNguoiDung() {
 
       data.forEach((row, index) => {
         const rowNumber = index + 2
+        const cccd = row.CCCD ? row.CCCD.toString().padStart(12, '0') : ''
+        const sdt = row.SDT ? row.SDT.toString().padStart(10, '0') : ''
+
         if (!row.TenHienThi || row.TenHienThi.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu tên hiển thị`)
         }
         if (!row.TenTaiKhoan || row.TenTaiKhoan.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu tên tài khoản`)
         }
-        if (!row.CCCD || row.CCCD.trim() === '') {
-          validationErrors.push(`Hàng ${rowNumber}: Thiếu CCCD`)
-        } else if (row.CCCD.toString().length !== 12) {
-          validationErrors.push(`Hàng ${rowNumber}: CCCD phải có 12 chữ số`)
+        // CCCD phải đúng 12 số
+        if (!/^\d{12}$/.test(cccd)) {
+          validationErrors.push(`Hàng ${rowNumber}: CCCD phải là 12 số`)
         }
-        if (!row.SDT || row.SDT.trim() === '') {
-          validationErrors.push(`Hàng ${rowNumber}: Thiếu số điện thoại`)
-        } else if (row.SDT.toString().length !== 10) {
-          validationErrors.push(`Hàng ${rowNumber}: Số điện thoại phải có 10 chữ số`)
+        // SDT phải đúng 10 hoặc 11 số
+        if (!/^\d{10,11}$/.test(row.SDT?.toString())) {
+          validationErrors.push(`Hàng ${rowNumber}: Số điện thoại phải là 10 hoặc 11 số`)
         }
         if (!row.MatKhau || row.MatKhau.trim() === '') {
           validationErrors.push(`Hàng ${rowNumber}: Thiếu mật khẩu`)
@@ -567,7 +573,7 @@ function QLNguoiDung() {
           confirmButtonColor: '#1976d2',
           width: '600px'
         })
-        return
+        throw new Error('Dữ liệu không hợp lệ')
       }
 
       const results = []
@@ -590,7 +596,32 @@ function QLNguoiDung() {
           await API.post(`/${routeAddress}/${funcAdd}`, accountData)
           results.push({ rowNumber, success: true })
         } catch (error) {
-          const errorMessage = error.response?.data?.message || error.message || 'Lỗi không xác định'
+          console.error(`Error at row ${rowNumber}:`, error)
+          let errorMessage = 'Lỗi không xác định'
+
+          if (error.response) {
+            // Lỗi từ server với response
+            if (error.response.data) {
+              if (typeof error.response.data === 'string') {
+                errorMessage = error.response.data
+              } else if (error.response.data.message) {
+                errorMessage = error.response.data.message
+              } else if (error.response.data.error) {
+                errorMessage = error.response.data.error
+              } else {
+                errorMessage = JSON.stringify(error.response.data)
+              }
+            } else {
+              errorMessage = `Lỗi HTTP ${error.response.status}: ${error.response.statusText}`
+            }
+          } else if (error.request) {
+            // Lỗi network
+            errorMessage = 'Lỗi kết nối mạng'
+          } else if (error.message) {
+            // Lỗi khác
+            errorMessage = error.message
+          }
+
           errors.push({ rowNumber, error: errorMessage })
         }
       }
@@ -606,38 +637,55 @@ function QLNguoiDung() {
         fireTopSwal({
           icon: 'error',
           title: 'Tất cả bản ghi đều lỗi',
-          html: `<div style="text-align: left;">
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
             <strong>Các lỗi:</strong><br>
-            ${errors.slice(0, 5).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
-            ${errors.length > 5 ? `<br><strong>... và ${errors.length - 5} lỗi khác</strong>` : ''}
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
           </div>`,
           confirmButtonColor: '#1976d2',
-          width: '600px'
+          width: '700px'
         })
+        throw new Error(`Tất cả ${data.length} bản ghi đều bị lỗi`)
       } else {
         fireTopSwal({
           icon: 'warning',
           title: 'Hoàn thành với một số lỗi',
-          html: `<div style="text-align: left;">
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
             <strong>Thành công:</strong> ${results.length} bản ghi<br>
             <strong>Lỗi:</strong> ${errors.length} bản ghi<br><br>
-            <strong>Các lỗi:</strong><br>
-            ${errors.slice(0, 5).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
-            ${errors.length > 5 ? `<br><strong>... và ${errors.length - 5} lỗi khác</strong>` : ''}
+            <strong>Chi tiết các lỗi:</strong><br>
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
           </div>`,
           confirmButtonColor: '#1976d2',
-          width: '600px'
+          width: '700px'
         })
       }
 
       fetchAccounts()
     } catch (error) {
+      console.error('Import Excel error:', error)
+
+      // Nếu đã xử lý lỗi validation hoặc một phần lỗi ở trên thì không cần throw lại
+      if (error.message === 'Dữ liệu không hợp lệ' || error.message.includes('bản ghi đều bị lỗi')) {
+        throw error
+      }
+
+      // Lỗi hệ thống khác
+      let systemErrorMessage = 'Có lỗi hệ thống xảy ra'
+      if (error.response?.data?.message) {
+        systemErrorMessage = error.response.data.message
+      } else if (error.message) {
+        systemErrorMessage = error.message
+      }
+
       fireTopSwal({
         icon: 'error',
-        title: 'Lỗi nhập dữ liệu',
-        text: 'Có lỗi hệ thống xảy ra',
+        title: 'Lỗi hệ thống',
+        text: systemErrorMessage,
         confirmButtonColor: '#1976d2'
       })
+      throw new Error(systemErrorMessage)
     }
   }
 

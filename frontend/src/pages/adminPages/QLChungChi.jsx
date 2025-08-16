@@ -171,37 +171,110 @@ function QLChungChi() {
 
   // Hàm xử lý Import Excel
   const handleImportExcel = async (data) => {
-    try {
-      const importPromises = data.map(async (row) => {
-        const certificateData = {
-          Loai: row.Loai || 'Ngoại ngữ',
-          TenChungChi: row.TenChungChi || '',
-          LePhiThi: row.LePhiThi ? Number(row.LePhiThi) : 0,
-          HocPhi: row.HocPhi ? Number(row.HocPhi) : 0,
-          ThoiHan: row.ThoiHan ? Number(row.ThoiHan) : 0,
-          DiemToiThieu: row.DiemToiThieu ? Number(row.DiemToiThieu) : 0,
-          DiemToiDa: row.DiemToiDa ? Number(row.DiemToiDa) : 10,
-          CachTinhDiem: row.CachTinhDiem || 'Trung bình'
-        }
-        return API.post(`/${routeAddress}/${funcAdd}`, certificateData)
-      })
+    const results = []
+    const errors = []
 
-      await Promise.all(importPromises)
-      fireTopSwal({
-        icon: 'success',
-        title: 'Thành công',
-        text: `Đã nhập thành công ${data.length} chứng chỉ`,
-        confirmButtonColor: '#1976d2'
-      })
+    try {
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i]
+        const rowNumber = i + 2
+
+        try {
+          const certificateData = {
+            Loai: row.Loai || 'Ngoại ngữ',
+            TenChungChi: row.TenChungChi || '',
+            LePhiThi: row.LePhiThi ? Number(row.LePhiThi) : 0,
+            HocPhi: row.HocPhi ? Number(row.HocPhi) : 0,
+            ThoiHan: row.ThoiHan ? Number(row.ThoiHan) : 0,
+            DiemToiThieu: row.DiemToiThieu ? Number(row.DiemToiThieu) : 0,
+            DiemToiDa: row.DiemToiDa ? Number(row.DiemToiDa) : 10,
+            CachTinhDiem: row.CachTinhDiem || 'Trung bình'
+          }
+          await API.post(`/${routeAddress}/${funcAdd}`, certificateData)
+          results.push({ rowNumber, success: true })
+        } catch (error) {
+          console.error(`Error at row ${rowNumber}:`, error)
+          let errorMessage = 'Lỗi không xác định'
+
+          if (error.response) {
+            if (error.response.data) {
+              if (typeof error.response.data === 'string') {
+                errorMessage = error.response.data
+              } else if (error.response.data.message) {
+                errorMessage = error.response.data.message
+              } else if (error.response.data.error) {
+                errorMessage = error.response.data.error
+              } else {
+                errorMessage = JSON.stringify(error.response.data)
+              }
+            } else {
+              errorMessage = `Lỗi HTTP ${error.response.status}: ${error.response.statusText}`
+            }
+          } else if (error.message) {
+            errorMessage = error.message
+          }
+
+          errors.push({ rowNumber, error: errorMessage })
+        }
+      }
+
+      if (errors.length === 0) {
+        fireTopSwal({
+          icon: 'success',
+          title: 'Thành công',
+          text: `Đã nhập thành công ${results.length} chứng chỉ`,
+          confirmButtonColor: '#1976d2'
+        })
+      } else if (results.length === 0) {
+        fireTopSwal({
+          icon: 'error',
+          title: 'Tất cả bản ghi đều lỗi',
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
+            <strong>Chi tiết các lỗi:</strong><br>
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '700px'
+        })
+        throw new Error(`Tất cả ${data.length} bản ghi đều bị lỗi`)
+      } else {
+        fireTopSwal({
+          icon: 'warning',
+          title: 'Hoàn thành với một số lỗi',
+          html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
+            <strong>Thành công:</strong> ${results.length} bản ghi<br>
+            <strong>Lỗi:</strong> ${errors.length} bản ghi<br><br>
+            <strong>Chi tiết các lỗi:</strong><br>
+            ${errors.slice(0, 10).map(e => `• Hàng ${e.rowNumber}: ${e.error}`).join('<br>')}
+            ${errors.length > 10 ? `<br><strong>... và ${errors.length - 10} lỗi khác</strong>` : ''}
+          </div>`,
+          confirmButtonColor: '#1976d2',
+          width: '700px'
+        })
+      }
+
       fetchCertificates()
     } catch (error) {
-      console.error('Lỗi nhập dữ liệu:', error)
+      console.error('Import Excel system error:', error)
+      if (error.message?.includes('bản ghi đều bị lỗi')) {
+        throw error
+      }
+
+      let systemErrorMessage = 'Có lỗi hệ thống xảy ra khi nhập dữ liệu'
+      if (error.response?.data?.message) {
+        systemErrorMessage = error.response.data.message
+      } else if (error.message) {
+        systemErrorMessage = error.message
+      }
+
       fireTopSwal({
         icon: 'error',
-        title: 'Lỗi',
-        text: error.response?.data?.message || 'Có lỗi xảy ra khi nhập dữ liệu',
+        title: 'Lỗi hệ thống',
+        text: systemErrorMessage,
         confirmButtonColor: '#1976d2'
       })
+      throw new Error(systemErrorMessage)
     }
   }
 

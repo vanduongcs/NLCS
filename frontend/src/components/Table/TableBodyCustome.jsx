@@ -5,7 +5,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 
 function formatDateToGMT7(date) {
-  if (!date) return ''
+  if (!date) return '___'
   const utc = new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000
   const gmt7Date = new Date(utc + 7 * 3600000)
   const ss = String(gmt7Date.getSeconds()).padStart(2, '0')
@@ -18,7 +18,7 @@ function formatDateToGMT7(date) {
 }
 
 function formatOnlyDate(date) {
-  if (!date) return ''
+  if (!date) return '___'
   const d = new Date(date)
   const dd = String(d.getDate()).padStart(2, '0')
   const MM = String(d.getMonth() + 1).padStart(2, '0')
@@ -32,7 +32,7 @@ function TableBodyCustome({ rows, columns, handleDelete, handleEdit }) {
       {rows.map((row, rowIndex) => (
         <TableRow key={row._id || `row-${rowIndex}`}>
           {columns.map((column, colIndex) => {
-            let content = ''
+            let content = '___'
 
             if (column.isAction === 'edit') {
               content = (
@@ -53,17 +53,17 @@ function TableBodyCustome({ rows, columns, handleDelete, handleEdit }) {
             } else if (Array.isArray(row[column.key])) {
               content = row[column.key].map((item, i) => (
                 <span key={`${row._id || `row-${rowIndex}`}-${column.key}-${i}`}>
-                  {`[${item}]${i < row[column.key].length - 1 ? ', ' : ''}`}
+                  {`[${item}]${i < row[column.key].length - 1 ? ', ' : '___'}`}
                 </span>
               ))
             } else if (column.key === 'NgayHetHan') {
               content =
-                row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === ''
+                row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === '___'
                   ? 'Vô thời hạn'
                   : formatOnlyDate(row[column.key])
             } else if (column.key === 'ThoiHan') {
               content =
-                row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === ''
+                row[column.key] === undefined || row[column.key] === null || row[column.key] === 0 || row[column.key] === '___'
                   ? 'Vô thời hạn'
                   : `${row[column.key]} năm`
             } else if (column.isDate) {
@@ -72,13 +72,13 @@ function TableBodyCustome({ rows, columns, handleDelete, handleEdit }) {
                   ? formatDateToGMT7(row[column.key])
                   : formatOnlyDate(row[column.key])
             } else {
-              content = row[column.key] !== undefined && row[column.key] !== null ? row[column.key] : ''
+              content = row[column.key] !== undefined && row[column.key] !== null ? row[column.key] : '___'
             }
 
             return (
               <TableCell
                 key={`${row._id || `row-${rowIndex}`}-${column.key}-${colIndex}`}
-                align={column.align || 'left'}
+                align={column.isDate ? 'center' : (column.align || 'left')}
               >
                 {content}
               </TableCell>
