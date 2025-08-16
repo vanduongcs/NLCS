@@ -33,7 +33,7 @@ function ImportExcel({ open, onClose, onImport, columnsCanEdit, pageContent }) {
     const y = d.y
     const m = String(d.m).padStart(2, '0')
     const day = String(d.d).padStart(2, '0')
-    return `${y}-${m}-${day}` // ISO
+    return `${y}-${m}-${day}`
   }
 
   const ddmmyyyyToISO = (str) => {
@@ -77,12 +77,10 @@ function ImportExcel({ open, onClose, onImport, columnsCanEdit, pageContent }) {
     )
   }
 
-  // Suy đoán độ dài pad (phòng khi file nhập bị mất 0 do lưu dạng number)
   const guessPadLen = (col) => {
     const label = (col.label || '').toLowerCase()
     const key = (col.key || '').toLowerCase()
-    if (/cccd|căn\s*cước/.test(label) || /cccd|can\s*cuoc/.test(key)) return 12 // CCCD VN = 12
-    // SDT: không pad cứng về 10, chỉ giữ nguyên chuỗi
+    if (/cccd|căn\s*cước/.test(label) || /cccd|can\s*cuoc/.test(key)) return 12
     return null
   }
 
@@ -151,11 +149,9 @@ function ImportExcel({ open, onClose, onImport, columnsCanEdit, pageContent }) {
                   hasData = true
                 }
               } else if (col.type === 'date') {
-                cellValue = parseDate(cellValue) // -> ISO
+                cellValue = parseDate(cellValue)
                 hasData = true
               } else {
-                // text/select/autocomplete... luôn giữ chuỗi để không mất 0 đầu
-                // Nếu Excel trả về number (do người dùng gõ lại sau khi xóa), convert + pad theo ngữ cảnh
                 cellValue = toTextPreserveLeadingZeros(cellValue, col)
                 hasData = true
               }
@@ -232,27 +228,22 @@ function ImportExcel({ open, onClose, onImport, columnsCanEdit, pageContent }) {
       const wb = XLSX.utils.book_new()
       const ws = XLSX.utils.aoa_to_sheet([headers, sample])
 
-      // Đưa về phạm vi rộng + set width
       const totalRows = 1000
       ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: totalRows - 1, c: headers.length - 1 } })
       ws['!cols'] = headers.map(() => ({ wch: 18 }))
 
-      // Tìm các cột là date hoặc text-like để set format Text
       const specialColIdx = columnsCanEdit
         .map((c, idx) => (isTextLike(c) || c.type === 'date' ? idx : -1))
         .filter(idx => idx >= 0)
 
-      // Set định dạng Text cho tất cả ô trong các cột đặc biệt
-      for (let r = 1; r <= totalRows; r++) { // Bắt đầu từ row 1 (0-indexed)
+      for (let r = 1; r <= totalRows; r++) {
         for (const cIdx of specialColIdx) {
           const addr = XLSX.utils.encode_cell({ r: r, c: cIdx })
           if (!ws[addr]) ws[addr] = { t: 's', v: '' }
-          // Quan trọng: đặt định dạng Text để Excel không tự động convert
           ws[addr].z = '@'
         }
       }
 
-      // Đảm bảo hàng mẫu (row 1) cũng có định dạng Text cho các cột đặc biệt
       specialColIdx.forEach((cIdx) => {
         const sampleAddr = XLSX.utils.encode_cell({ r: 1, c: cIdx })
         if (ws[sampleAddr]) {
